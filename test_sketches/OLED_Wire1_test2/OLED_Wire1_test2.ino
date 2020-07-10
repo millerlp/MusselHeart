@@ -42,7 +42,8 @@ void setup() {
   oled.set2X();
   oled.print("Hello");
   oled.println();
-
+  delay(1000);
+  
   for (byte i = 0; i < 8; i++){
       // Set the TCA I2C multiplexer to channel 0
     tcaselect(i);
@@ -52,8 +53,14 @@ void setup() {
     {
       // If sensor is present, mark it in the goodSensors array
       goodSensors[i] = i;
+    } else {
+      delay(5);
+      if(particleSensor.begin(Wire, I2C_SPEED_FAST)){
+        // Try a second time
+        goodSensors[i] = i;
+      }
     }
-        //Setup to sense a nice looking saw tooth on the plotter
+    // Setup to sense a nice looking saw tooth on the plotter
     byte ledBrightness = 0x1F; //Options: 0=Off to 255=50mA
     byte sampleAverage = 8; //Options: 1, 2, 4, 8, 16, 32
     byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
@@ -80,14 +87,9 @@ void setup() {
   }
   Serial.println();
 
-  
-      // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
-//    Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 400000);
-//    Wire.setDefaultTimeout(200000); // 200ms
-    // For Teensy3.5 Wire, Wire1, Wire2 available
 
 
-//  Serial.print("Sensor1\tSensor2");
+
 }
 
 void loop() {
@@ -98,7 +100,7 @@ void loop() {
       uint32_t sensorVal = particleSensor.getIR();
       Serial.print(sensorVal); //Send raw data to plotter
       Serial.print("\t");
-      printSensorOLED(i, sensorVal);
+      printSensorOLED(i, sensorVal); // Use function below to print sensor values to OLED screen
     } 
   }
   Serial.println();
@@ -106,7 +108,7 @@ void loop() {
 
 
 
-
+//**************************************
 void tcaselect(uint8_t i) {
   if (i > 7) return;
   Wire.beginTransmission(TCAADDR);
@@ -114,49 +116,50 @@ void tcaselect(uint8_t i) {
   Wire.endTransmission();  
 }
 
+//****************************************
 void printSensorOLED(uint8_t i, uint32_t sensorValue){
   // This is based on using a 5x7 font in 1x mode (each character is 5 columns (pixels) wide)
-switch(i){
-  case 0:
-  oled.clearField(0,0,30); // Clear 30 pixels = 6 characters x 5 pixels per character)
-  oled.setCursor(0,0);
-  oled.print(sensorValue);
-  break;
-  case 1:
-  oled.clearField(40,0,30); // start at 40th column (8 characters x 5 pixels per character)
-  oled.setCursor(40,0);
-  oled.print(sensorValue);
-  break;  
-  case 2:
-  oled.clearField(0,2,30);
-  oled.setCursor(0,2);
-  oled.print(sensorValue);
-  break;
-  case 3:
-  oled.clearField(40,2,30);
-  oled.setCursor(40,2);
-  oled.print(sensorValue);
-  break;  
-  case 4:
-  oled.clearField(0,4,30);
-  oled.setCursor(0,4);
-  oled.print(sensorValue);
-  break;
-  case 5:
-  oled.clearField(40,4,30);
-  oled.setCursor(40,4);
-  oled.print(sensorValue);
-  break;
-  case 6:
-  oled.clearField(0,6,30);
-  oled.setCursor(0,6);
-  oled.print(sensorValue);
-  break;
-  case 7:
-  oled.clearField(40,6,30);
-  oled.setCursor(40,6);
-  oled.print(sensorValue);
-  break;
-}
+  switch(i){
+    case 0:
+    oled.clearField(0,0,30); // Clear 30 pixels = 6 characters x 5 pixels per character)
+    oled.setCursor(0,0);
+    oled.print(sensorValue);
+    break;
+    case 1:
+    oled.clearField(40,0,30); // start at 40th column (8 characters x 5 pixels per character)
+    oled.setCursor(40,0);
+    oled.print(sensorValue);
+    break;  
+    case 2:
+    oled.clearField(0,2,30);
+    oled.setCursor(0,2);
+    oled.print(sensorValue);
+    break;
+    case 3:
+    oled.clearField(40,2,30);
+    oled.setCursor(40,2);
+    oled.print(sensorValue);
+    break;  
+    case 4:
+    oled.clearField(0,4,30);
+    oled.setCursor(0,4);
+    oled.print(sensorValue);
+    break;
+    case 5:
+    oled.clearField(40,4,30);
+    oled.setCursor(40,4);
+    oled.print(sensorValue);
+    break;
+    case 6:
+    oled.clearField(0,6,30);
+    oled.setCursor(0,6);
+    oled.print(sensorValue);
+    break;
+    case 7:
+    oled.clearField(40,6,30);
+    oled.setCursor(40,6);
+    oled.print(sensorValue);
+    break;
+  }
   
 }
