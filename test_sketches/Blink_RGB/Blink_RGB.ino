@@ -1,14 +1,14 @@
 // Blink.ino
 /* Basic test of the RGB LED on HeartRate daughterboard  
- *  RevA hardware. Uses a common anode led APTF1616SEEZGKQBKC
+ *  RevB hardware. Uses a common anode led APTF1616SEEZGKQBKC
  *  from Kingbright.
  *  
  *  
  */
 
-int REDLED = 6; // PB1
-int GRNLED = 5; // PD5
-int BLUELED = 7; // PD6
+int REDLED = 7; // PB1
+int GRNLED = 6; // PD5
+int BLUELED = 5; // PD6
 
 #define COMMON_ANODE
 
@@ -35,15 +35,17 @@ void loop() {
 //  setColor(0, 127, 120);  // aqua
 //  delay(1000);
   setColor(0,0,0);
-  delay(1000);
+  delay(3000);
 }
 
 void setColor(int red, int green, int blue)
 {
+  // Brightness values run from 0 to 255, but a value of 256
+  // is needed to fully shut the LED off on Teensy
   #ifdef COMMON_ANODE
-    red = 255 - red;
-    green = 255 - green;
-    blue = 255 - blue;
+    red = 256 - red; 
+    green = 256 - green;
+    blue = 256 - blue;
   #endif
   analogWrite(REDLED, red);
   analogWrite(GRNLED, green);
