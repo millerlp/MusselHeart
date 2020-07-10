@@ -1,5 +1,5 @@
 
-//#include <i2c_t3.h>  // Special I2C lib for Teensy3 https://github.com/nox771/i2c_t3
+
 #include <Wire.h>
 //#include "MAX30105.h" // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
 //#include "heartRate.h" // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
@@ -13,7 +13,7 @@
 #define MULTIPLE_I2C_PORTS 1
 
 SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 port
-#define I2C_ADDRESS1 0x79 // for oled
+#define I2C_ADDRESS1 0x3C // for oled. DIY mall units list 0x78 as address, but need 0x3C to work here
 
 // Create an array to hold numbers of good sensor channels (up to 8)
 //byte goodSensors[] = {127,127,127,127,127,127,127,127};
@@ -33,7 +33,8 @@ void setup() {
   oled.setFont(Adafruit5x7);    
   oled.clear(); 
   oled.home();
-  oled.print(F("Hello"));
+  oled.set2X();
+  oled.print("Hello");
   oled.println();
 
 //  for (byte i = 0; i < 8; i++){
