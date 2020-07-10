@@ -22,8 +22,8 @@ void setup() {
   Wire.setSDA(18); // Teensy3.5 Wire SDA pin on daughterboard RevA
   Wire.begin();
   Wire1.begin();
+  Wire1.setClock(400000L);
   oled.begin(&Adafruit128x64, I2C_ADDRESS1);
-  oled.set400kHz();  
   oled.setFont(Adafruit5x7);    
   oled.clear(); 
   oled.print(F("Hello"));
@@ -61,14 +61,6 @@ void setup() {
   }
   Serial.println();
 
-  
-      // Setup for Master mode, pins 18/19, external pullups, 400kHz, 200ms default timeout
-//    Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 400000);
-//    Wire.setDefaultTimeout(200000); // 200ms
-    // For Teensy3.5 Wire, Wire1, Wire2 available
-
-
-//  Serial.print("Sensor1\tSensor2");
 }
 
 void loop() {
