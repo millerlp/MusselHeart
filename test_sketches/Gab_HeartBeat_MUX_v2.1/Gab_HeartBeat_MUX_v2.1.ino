@@ -1,5 +1,7 @@
 
 /* . GKalbach July 2020
+ *    updated 2020-08-01
+ *    
        sketch written for Teensy 3.5 Heart Rate Rev B
        initial sketch goals are to iterate through all
        multiplexed sensors and write data to SD card
