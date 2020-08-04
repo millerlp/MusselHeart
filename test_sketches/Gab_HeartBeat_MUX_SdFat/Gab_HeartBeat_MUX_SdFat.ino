@@ -28,6 +28,7 @@ MAX30105 particleSensor;
 // time components
 TimeElements tm;
 time_t myTime;
+uint8_t oldDay;
 //unsigned long millisVal;  // not being used currently that I can see
 
 unsigned int myIntervalMS = 50;  // units milliseconds
@@ -66,7 +67,7 @@ void setup() {
   else
     Serial.println("RTC has set the system time");
   digitalClockDisplay(myTime); Serial.println();
-
+  oldDay = day(myTime); // Store current day
 
   // Grab the serial number from the EEPROM memory
   // This will be in the format "SNxx". The serial number
@@ -131,8 +132,16 @@ void loop() {
     myMillis = millis();
     myCounter++; // increment here, since we want to mark how many times (20 times) we go through
     // the sampling cycle, rather than how many times each sensor gets sampled
-    // If the file is available, write to it
+    myTime = Teensy3Clock.get();
 
+    // If a new day has started, create a new output file
+    if ( oldDay != day(myTime) ){
+      // Close the current file
+      myFile.close();
+      // Start a new file
+      initFileName(SD, myFile, myTime, filename, serialValid, serialNumber);
+    }
+    
     // Reopen logfile. If opening fails, notify the user
     if (!myFile.isOpen()) {
       if (!myFile.open(filename, O_RDWR | O_CREAT | O_AT_END)) {
@@ -140,7 +149,7 @@ void loop() {
       }
     }
     if (myFile.isOpen()){
-      myTime = Teensy3Clock.get();
+      
       myFile.print(myMillis); myFile.print(","); // keep track of start of sampling round
       myFile.print(myTime); myFile.print(",");
       myFile.print(year(myTime)); myFile.print("-"); myFile.print(month(myTime)); myFile.print("-"); myFile.print(day(myTime));
