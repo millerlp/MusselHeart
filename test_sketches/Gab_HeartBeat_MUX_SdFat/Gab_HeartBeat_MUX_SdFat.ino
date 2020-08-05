@@ -136,6 +136,7 @@ void loop() {
 
     // If a new day has started, create a new output file
     if ( oldDay != day(myTime) ){
+      oldDay = day(myTime); // update oldDay value to the new day
       // Close the current file
       myFile.close();
       // Start a new file
