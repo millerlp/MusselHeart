@@ -13,7 +13,7 @@ MAX30105 particleSensor;
 #define MULTIPLE_I2C_PORTS 1
 
 SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 port
-#define I2C_ADDRESS1 0x79 // for oled
+#define I2C_ADDRESS1 0x3C // for oled
 
 // Create an array to hold numbers of good sensor channels (up to 8)
 byte goodSensors[] = {127,127,127,127,127,127,127,127};
@@ -21,6 +21,7 @@ byte goodSensors[] = {127,127,127,127,127,127,127,127};
 
 void setup() {
   Serial.begin(57600); // Speed doesn't actually matter for Teensy3
+  
   Wire.setSCL(19); // Teensy3.5 Wire SCL pin on daughterboard RevA
   Wire.setSDA(18); // Teensy3.5 Wire SDA pin on daughterboard RevA
   Wire.begin();
@@ -34,7 +35,10 @@ void setup() {
   oled.clear(); 
   oled.home();
   oled.print(F("Hello"));
-
+  oled.println();
+  oled.print("Polling sensors");
+  Serial.println("Hello");
+  
   for (byte i = 0; i < 8; i++){
       // Set the TCA I2C multiplexer to channel 0
     tcaselect(i);
@@ -76,7 +80,7 @@ void setup() {
 
 
 //  Serial.print("Sensor1\tSensor2");
-}
+}  // end of setup loop
 
 void loop() {
 
