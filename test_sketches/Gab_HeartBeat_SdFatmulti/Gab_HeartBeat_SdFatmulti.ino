@@ -20,7 +20,7 @@
 #include "SdFat.h"            // https://github.com/greiman/SdFat
 #include "EEPROM.h"
 
-#define NUM_SENSORS 2  // Change this if you have fewer than 8 sensors attached, to skip over higher unused channels
+#define NUM_SENSORS 8  // Change this if you have fewer than 8 sensors attached, to skip over higher unused channels
 
 MAX30105 particleSensor;
 // sensor configurations
@@ -37,14 +37,16 @@ int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
 TimeElements tm;
 time_t myTime;
 uint8_t oldDay;
-//unsigned long millisVal;  // not being used currently that I can see
-
+uint8_t oldMinute;
 unsigned int myIntervalMS = 50;  // units milliseconds
 unsigned long myMillis;
 unsigned long lastWriteMillis;
 unsigned long tempMillis;
 unsigned int tempIntervalMS = 30000; //units milliseconds
 int myCounter;
+bool readTempsFlag = false; // Used to trigger a temperature readout
+bool temp0Flag = false; // Used to mark a temperature readout at 0 seconds
+bool temp30Flag = false; // Used to mark a temperature readout at 30 seconds
 
 //SD components
 SdFatSdio SD; // Uses Teensy's built-in SD card slot
@@ -192,13 +194,14 @@ void loop() {
       // port numbers (7, 8 etc.)
       for (byte i = 0; i < NUM_SENSORS; i++) {
         tcaselect(i);
-        particleSensor.wakeUp(); // wake up sensor to take sample
-        //        myFile.print(particleSensor.getIR()); // old method
-        delay(10);
-        myFile.print(quickSampleIR()); // custom function, see bottom of this file
-        myFile.print(",");
-        particleSensor.shutDown(); // shut down sensor once sample is taken to save power
-        //        myFile.print(particleSensor.readTemperature()); // old method
+        particleSensor.wakeUp(); // Wake up sensor to take sample
+        delayMicroseconds(10); // Give the chip a chance to wake up
+        myFile.print(quickSampleIR()); // custom function, see bottom of this file. This waits long enough to gather one sample
+        
+        if (readTempsFlag == false) {
+          // If we don't need to read the temperatures on this round, shut the sensor back down
+          particleSensor.shutDown(); // shut down sensor once sample is taken to save power
+        }
         if (i < (NUM_SENSORS - 1)) {
           myFile.print(",");
         }
@@ -212,73 +215,108 @@ void loop() {
     else {
       Serial.println("error opening file.");
     }
-  }
-
-  // temp file
-  if ( (millis() - tempMillis) >= tempIntervalMS) {
-    // Always update tempMillis whenever the if statement successfully executes so that the next
-    // time around the if statement is comparing the time difference to this current time at the
-    // start of the sampling cycle
-    tempMillis = millis();
-    myTime = Teensy3Clock.get();
-    // If a new day has started, create a new output file
-    if ( oldDay != day(myTime) ) {
-      oldDay = day(myTime); // update oldDay value to the new day
-      // Close the current file
-      myFile2.close();
-      // Start a new file
-      initTempFileName(SD, myFile2, myTime, filename, serialValid, serialNumber, temp);
-    }
-
-    // Reopen logfile. If opening fails, notify the user
-    if (!myFile2.isOpen()) {
-      if (!myFile2.open(filename2, O_RDWR | O_CREAT | O_AT_END)) {
-        Serial.println("Could not reopen file");
+    
+    // Routine to read temperatures if the readTempsFlag has been set true elsewhere
+    if (readTempsFlag == true){
+      tempMillis = millis(); // update this for the file
+        myTime = Teensy3Clock.get();
+        // If a new day has started, create a new output file
+        if ( oldDay != day(myTime) ) {
+          oldDay = day(myTime); // update oldDay value to the new day
+          // Close the current file
+          myFile2.close();
+          // Start a new file
+          initTempFileName(SD, myFile2, myTime, filename, serialValid, serialNumber, temp);
+        }
+    
+        // Reopen logfile. If opening fails, notify the user
+        if (!myFile2.isOpen()) {
+          if (!myFile2.open(filename2, O_RDWR | O_CREAT | O_AT_END)) {
+            Serial.println("Could not reopen file");
+          }
+        }
+        if (myFile2.isOpen()) {
+          myFile2.print(tempMillis); myFile2.print(",");
+          myFile2.print(myTime); myFile2.print(",");
+          myFile2.print(year(myTime)); myFile2.print("-"); myFile2.print(month(myTime)); myFile2.print("-"); myFile2.print(day(myTime));
+          myFile2.print(" "); myFile2.print(hour(myTime)); myFile2.print(":"); myFile2.print(minute(myTime)); myFile2.print(":"); myFile2.print(second(myTime));
+          myFile2.print(",");
+    
+          // loop through sensors in sequence. If you have fewer than 8 sensors attached, change the value
+          // of NUM_SENSORS at the top of this file, and make sure the sensors are plugged into the lower
+          // number ports available (1,2,3 etc.) rather than skipping over ports and plugging into higher
+          // port numbers (7, 8 etc.)
+          for (byte i = 0; i < NUM_SENSORS; i++) {
+            tcaselect(i);
+            myFile2.print(readTemperatureSample()); myFile2.print(",");
+            particleSensor.shutDown(); // shut down sensor to save power
+          }
+          Serial.println("Temperature reading taken");
+          myFile2.println(millis());
+          myFile2.close();
+          readTempsFlag = false; // reset this flag so this section doesn't execute again until triggered
+        }
+        else {
+          Serial.println("error opening file.");
+        }
       }
-    }
-    if (myFile2.isOpen()) {
-      myFile2.print(tempMillis); myFile2.print(",");
-      myFile2.print(myTime); myFile2.print(",");
-      myFile2.print(year(myTime)); myFile2.print("-"); myFile2.print(month(myTime)); myFile2.print("-"); myFile2.print(day(myTime));
-      myFile2.print(" "); myFile2.print(hour(myTime)); myFile2.print(":"); myFile2.print(minute(myTime)); myFile2.print(":"); myFile2.print(second(myTime));
-      myFile2.print(",");
 
-      // loop through sensors in sequence. If you have fewer than 8 sensors attached, change the value
-      // of NUM_SENSORS at the top of this file, and make sure the sensors are plugged into the lower
-      // number ports available (1,2,3 etc.) rather than skipping over ports and plugging into higher
-      // port numbers (7, 8 etc.)
-      for (byte i = 0; i < NUM_SENSORS; i++) {
-        tcaselect(i);
-        particleSensor.wakeUp(); // wake up sensor
-        triggerTemperatureSample(); // start temp sample, wait 30ms to read
-        delay(40);
-        myFile2.print(readTemperatureSample()); myFile2.print(",");
-        Serial.println("Temperature reading taken");
-        particleSensor.shutDown(); // shut down sensor to save power
-        //        myFile.print(particleSensor.readTemperature()); // old method
-      }
-      myFile2.println(millis());
-      myFile2.close();
+    
+  } // End of IR sampling routine (and temperature readout routine)
+
+  
+  //----------------------------------------
+  // Temperature sampling check
+  // Check if it has been long enough for a new temperature reading to be needed (i.e. 30 seconds).
+  // If it is, wake up the sensors and initiate a temperature reading, but we won't actually read
+  // the temperatures until the next time through the IR readout section above. This should give
+  // sufficient time for the sensors to read their temperatures (about 29 milliseconds) when our
+  // IR sampling interval is larger than that (usually 50 milliseconds)
+  if ( (second(myTime) == 0) & (temp0Flag == false) ){
+    // Trigger when seconds value == 0
+    readTempsFlag = true;
+    temp0Flag = true; // set true to stop repeated measures in the same second
+    temp30Flag = false; // set false to allow next sample at 30 seconds
+    for (byte i = 0; i < NUM_SENSORS; i++) {
+      tcaselect(i);
+      particleSensor.wakeUp(); // wake up sensor
+      triggerTemperatureSample(); // start temp sample so that it's ready by the next cycle through the main loop  
+      // We won't put the sensor back to sleep on this cycle so that it can complete its temperature reading
     }
-    else {
-      Serial.println("error opening file.");
+  }
+  if ( (second(myTime) == 30) & (temp30Flag == false) ){
+    // Trigger when seconds value == 30
+    readTempsFlag = true;
+    temp30Flag = true; // set true to stop repeated measures in the same second
+    temp0Flag = false; // set false to allow next sample at 0 seconds
+    for (byte i = 0; i < NUM_SENSORS; i++) {
+      tcaselect(i);
+      particleSensor.wakeUp(); // wake up sensor
+      triggerTemperatureSample(); // start temp sample so that it's ready by the next cycle through the main loop  
+      // We won't put the sensor back to sleep on this cycle so that it can complete its temperature reading
     }
   }
 
-  // I'm not sure this if statement below is necessary in practice. The SD library should take care of
-  // flushing data to the card on its own whenever it accumulates enough data. You'd only want this
-  // to force a flush if you really want to be sure a flush happens on a regular (frequent) interval,
-  // which isn't really necessary.
-  /*
-  if (myCounter > 19) {
-    myFile.flush(); // force a write to the SD card every second
-    //    Serial.print("Millis since last card write: ");
-    Serial.println( (millis() - lastWriteMillis)); // Time difference since last card flush, ideally = 1000
-    //    Serial.println("\t Data written to SD card. myCounter reset.");
-    lastWriteMillis = millis(); // Update lastWriteMillis
-    myCounter = 0;
-  }
-*/
+  
+//  if ( (millis() - tempMillis) >= tempIntervalMS) {
+//    // Always update tempMillis whenever the if statement successfully executes so that the next
+//    // time around the if statement is comparing the time difference to this current time at the
+//    // start of the sampling cycle
+//    tempMillis = millis();
+//    // Loop through sensors in sequence. If you have fewer than 8 sensors attached, change the value
+//    // of NUM_SENSORS at the top of this file, and make sure the sensors are plugged into the lower
+//    // number ports available (1,2,3 etc.) rather than skipping over ports and plugging into higher
+//    // port numbers (7, 8 etc.)
+//    for (byte i = 0; i < NUM_SENSORS; i++) {
+//      tcaselect(i);
+//      particleSensor.wakeUp(); // wake up sensor
+//      triggerTemperatureSample(); // start temp sample so that it's ready by the next cycle through the main loop  
+//      // We won't put the sensor back to sleep on this cycle so that it can complete its temperature reading
+//    }
+//    readTempsFlag = true; // Set true to trigger a readout on the next cycle through the main loop
+//  }
+
+
 }  // end of main loop
 
 
@@ -536,9 +574,10 @@ uint32_t quickSampleIR(void) {
   // Clear the MAX30105 FIFO buffer so that there will only be one new sample to read
   particleSensor.clearFIFO();
   // Multiply pulseWidth by 2 because we always have to wait for the Red LED to sample first
-  // before the IR LED gets sampled. Then account for time taken for any sample averages, and
-  // add on a buffer of 50 more microseconds just for safety's sake
-  delayMicroseconds( (pulseWidth * 2 * sampleAverage) + 50) ;
+  // before the IR LED gets sampled. Also account for time taken for any sample averages.
+  // Then add on 696us for the delay between two LED channels ("slot timing", see datasheet Table 14)
+  // and add on a buffer of 50 more microseconds just for safety's sake
+  delayMicroseconds( (pulseWidth * 2 * sampleAverage) + 696 + 50) ;
   return (particleSensor.getIR());
 } // end of quickSampleIR function
 
