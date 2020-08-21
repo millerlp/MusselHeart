@@ -25,12 +25,14 @@
 
 #define NUM_SENSORS 8  // Change this if you have fewer than 8 sensors attached, to skip over higher unused channels
 
+#define SLEEP // comment this line out to disable shutdown/wakeup of the MAX30105 sensors
+
 MAX30105 particleSensor;
 // sensor configurations
 byte ledBrightness = 0x1F; //Options: 0=Off to 255=fully on
 byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
-byte sampleRate = 200; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
+int sampleRate = 1000; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 int pulseWidth = 411; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs
 int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
 
@@ -79,10 +81,12 @@ char temp[] = "TEMP"; // end of temperature file name
 void setup() {
   Serial.begin(115200);
   //while (!Serial); // wait for serial port to connect. Sketch won't run unless serial monitor is open with this line
+  Wire.setSCL(19);
+  Wire.setSDA(18);
   Wire.begin(); // initialize I2C communication for MUX & sensors
-  /*
-    Wire.setSCL(19);
-    Wire.setSDA(18);
+  
+   
+    /*
     Wire1.begin(); // for OLED display
     Wire1.setSCL(37);
     Wire1.setSDA(38);
@@ -127,9 +131,9 @@ void setup() {
       particleSensor.enableDIETEMPRDY(); //enable temp ready interrupt. Required to log temp, but each read takes 29ms
       //      particleSensor.disableDIETEMPRDY(); //disable temp ready interrupt.
       // Tweak individual settings
-      //particleSensor.setPulseAmplitudeRed(0x00); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
+      particleSensor.setPulseAmplitudeRed(0x00); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
       particleSensor.setPulseAmplitudeIR(ledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
-      particleSensor.setPulseWidth(pulseWidth); //Options: 69, 118, 215, 411. Higher values = more sensitivity
+//      particleSensor.setPulseWidth(pulseWidth); //DANGER - this screws things up. Options: 69, 118, 215, 411. Higher values = more sensitivity
       triggerTemperatureSample(); // Start the temperature sample (wait 29 ms before attempting to read)
     }
   }
@@ -197,13 +201,18 @@ void loop() {
       // port numbers (7, 8 etc.)
       for (byte i = 0; i < NUM_SENSORS; i++) {
         tcaselect(i);
-//        particleSensor.wakeUp(); // Wake up sensor to take sample
-//        delayMicroseconds(10); // Give the chip a chance to wake up
+#ifdef SLEEP        
+        particleSensor.wakeUp(); // Wake up sensor to take sample
+        delayMicroseconds(10); // Give the chip a chance to wake up
+#endif        
+
         myFile.print(quickSampleIR()); // custom function, see bottom of this file. This waits long enough to gather one sample
         
         if (readTempsFlag == false) {
+#ifdef SLEEP          
           // If we don't need to read the temperatures on this round, shut the sensor back down
-//          particleSensor.shutDown(); // shut down sensor once sample is taken to save power
+          particleSensor.shutDown(); // shut down sensor once sample is taken to save power
+#endif
         }
         if (i < (NUM_SENSORS - 1)) {
           myFile.print(",");
@@ -252,9 +261,11 @@ void loop() {
           for (byte i = 0; i < NUM_SENSORS; i++) {
             tcaselect(i);
             myFile2.print(readTemperatureSample()); myFile2.print(",");
-//            particleSensor.shutDown(); // shut down sensor to save power
+#ifdef SLEEP            
+            particleSensor.shutDown(); // shut down sensor to save power
+#endif
           }
-          Serial.println("Temperature reading taken");
+//          Serial.println("Temperature reading taken");
           myFile2.println(millis());
           myFile2.close();
           readTempsFlag = false; // reset this flag so this section doesn't execute again until triggered
@@ -282,7 +293,10 @@ void loop() {
     temp30Flag = false; // set false to allow next sample at 30 seconds
     for (byte i = 0; i < NUM_SENSORS; i++) {
       tcaselect(i);
-//      particleSensor.wakeUp(); // wake up sensor
+#ifdef SLEEP      
+      particleSensor.wakeUp(); // wake up sensor
+      delayMicroseconds(10);
+#endif
       triggerTemperatureSample(); // start temp sample so that it's ready by the next cycle through the main loop  
       // We won't put the sensor back to sleep on this cycle so that it can complete its temperature reading
     }
@@ -294,31 +308,14 @@ void loop() {
     temp0Flag = false; // set false to allow next sample at 0 seconds
     for (byte i = 0; i < NUM_SENSORS; i++) {
       tcaselect(i);
-//      particleSensor.wakeUp(); // wake up sensor
+#ifdef SLEEP      
+      particleSensor.wakeUp(); // wake up sensor
+      delayMicroseconds(10);
+#endif      
       triggerTemperatureSample(); // start temp sample so that it's ready by the next cycle through the main loop  
       // We won't put the sensor back to sleep on this cycle so that it can complete its temperature reading
     }
   }
-
-  
-//  if ( (millis() - tempMillis) >= tempIntervalMS) {
-//    // Always update tempMillis whenever the if statement successfully executes so that the next
-//    // time around the if statement is comparing the time difference to this current time at the
-//    // start of the sampling cycle
-//    tempMillis = millis();
-//    // Loop through sensors in sequence. If you have fewer than 8 sensors attached, change the value
-//    // of NUM_SENSORS at the top of this file, and make sure the sensors are plugged into the lower
-//    // number ports available (1,2,3 etc.) rather than skipping over ports and plugging into higher
-//    // port numbers (7, 8 etc.)
-//    for (byte i = 0; i < NUM_SENSORS; i++) {
-//      tcaselect(i);
-//      particleSensor.wakeUp(); // wake up sensor
-//      triggerTemperatureSample(); // start temp sample so that it's ready by the next cycle through the main loop  
-//      // We won't put the sensor back to sleep on this cycle so that it can complete its temperature reading
-//    }
-//    readTempsFlag = true; // Set true to trigger a readout on the next cycle through the main loop
-//  }
-
 
 }  // end of main loop
 
@@ -572,17 +569,7 @@ void initTempFileName(SdFatSdio& SD, File& myFile2, time_t time1, char *filename
 } // end of initTempFileName function
 
 //-----------------------------------------------
-// Custom sampling function for the MAX30105, calling functions in the MAX30105.h library
-uint32_t quickSampleIR(void) {
-  // Clear the MAX30105 FIFO buffer so that there will only be one new sample to read
-  particleSensor.clearFIFO();
-  // Multiply pulseWidth by 2 because we always have to wait for the Red LED to sample first
-  // before the IR LED gets sampled. Also account for time taken for any sample averages.
-  // Then add on 696us for the delay between two LED channels ("slot timing", see datasheet Table 14)
-  // and add on a buffer of 50 more microseconds just for safety's sake
-  delayMicroseconds( (pulseWidth * 2 * sampleAverage) + 696 + 50) ;
-  return (particleSensor.getIR());
-} // end of quickSampleIR function
+
 
 
 //---------------------------------------------
@@ -611,3 +598,60 @@ float readTemperatureSample(void) {
   // Calculate temperature (datasheet pg. 23)
   return (float)tempInt + ((float)tempFrac * 0.0625);
 }
+
+//-----------------------------------------------
+// Custom sampling function for the MAX30105, calling functions in the MAX30105.h library
+uint32_t quickSampleIR(void) {
+  // Clear the MAX30105 FIFO buffer so that there will only be one new sample to read
+  particleSensor.clearFIFO();
+  // Implement a delay for new samples to be collected in the FIFO. If sample averaging
+  // is used, this loop will need to execute multiple times to allow the multiple samples
+  // to be collected
+  for (int i = 0; i < sampleAverage; i++){
+    switch (sampleRate) {
+      // Options 50, 100, 200, 400, 800, 1000, 1600, 3200 samples per second
+      case 50:
+        delay(20);
+        break;
+      case 100:
+        delay(10);
+        break;
+      case 200:
+        delay(5);
+        break;
+      case 400:
+        delayMicroseconds(2500);
+        break;
+      case 800:
+        delayMicroseconds(1250);
+        break;
+      case 1000:
+        delay(1);
+        break;
+      case 1600:
+        delayMicroseconds(625);
+        break;
+      case 3200:
+        delayMicroseconds(313);
+        break;
+    }
+    // Now add in the delay for the actual LED flashes to happen
+    switch (pulseWidth) {
+      // options: 69, 118, 215, 411
+      case 69:
+        delayMicroseconds( pulseWidth + 427 + 50);
+        break;
+      case 118:
+        delayMicroseconds( pulseWidth + 525 + 50);
+        break;
+      case 215:
+        delayMicroseconds( pulseWidth + 720 + 50);
+        break;
+      case 411:
+        delayMicroseconds( pulseWidth + 1107 + 50);
+        break;
+    }
+  } // end up of delay loop
+  // Query the FIFO buffer on the sensor for the most recent IR value
+  return (particleSensor.getIR());
+} // end of quickSampleIR function
