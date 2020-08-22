@@ -16,7 +16,7 @@
 */
 
 #include "MAX30105.h"         // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
-#include "heartRate.h"        // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
+//#include "heartRate.h"        // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
 #include "SSD1306Ascii.h"     // https://github.com/greiman/SSD1306Ascii
 #include "SSD1306AsciiWire.h" // https://github.com/greiman/SSD1306Ascii
 #include "TimeLib.h"          // https://github.com/PaulStoffregen/Time
@@ -33,7 +33,7 @@ MAX30105 particleSensor;
 // sensor configurations
 byte REDledBrightness = 0x01; // low value of 0x00 shuts it off, 0x01 is barely on
 byte IRledBrightness = 0x1F; //Options: 0=0x00 to 0xFF=fully on
-byte sampleAverage = 2; //Options: 1, 2, 4, 8, 16, 32
+byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
 int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs
