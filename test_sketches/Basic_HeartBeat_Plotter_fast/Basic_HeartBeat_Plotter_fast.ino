@@ -23,7 +23,7 @@
 #include <Wire.h>
 #include "MAX30105.h"
 
-#define NUM_SENSORS 8
+#define NUM_SENSORS 1
 #define QUICKSAMPLE 1 // Set 0 to use old sampling method, 1 to enable quick sample, set 2 to show millis() interval
 #define SLEEP  // Comment this out to disable sleep routine. Leave uncommented to use shutdown/wakeup
 
@@ -31,7 +31,7 @@
 MAX30105 particleSensor;
 // sensor configurations
 byte ledBrightness = 0x1F; //Options: 0=Off to 255=fully on
-byte sampleAverage = 2; //Options: 1, 2, 4, 8, 16, 32
+byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
 int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 // For pulseWidth = 411, maximum sampleRate value is 400. For pulseWidth = 215, the maximum 
@@ -43,7 +43,7 @@ int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
 
 unsigned int myIntervalMS = 50;  // units milliseconds
 unsigned long myMillis;
-unsigned long myMillisExtra; 
+
 
 
 
@@ -128,7 +128,10 @@ void loop()
 #endif
 
 #if (QUICKSAMPLE == 0 | QUICKSAMPLE == 1)
-      Serial.print("\t");  
+      if (NUM_SENSORS > 1){
+        Serial.print("\t");  
+      }
+      
 #endif
       } // end of for loop reading sensors
 #if (QUICKSAMPLE == 2)
