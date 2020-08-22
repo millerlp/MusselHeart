@@ -24,7 +24,7 @@
 #include "MAX30105.h"
 
 #define NUM_SENSORS 8
-#define QUICKSAMPLE 2 // Set 0 to use old sampling method, 1 to enable quick sample, set 2 to show millis() interval
+#define QUICKSAMPLE 1 // Set 0 to use old sampling method, 1 to enable quick sample, set 2 to show millis() interval
 #define SLEEP  // Comment this out to disable sleep routine. Leave uncommented to use shutdown/wakeup
 
 
@@ -35,7 +35,7 @@ byte sampleAverage = 2; //Options: 1, 2, 4, 8, 16, 32
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
 int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 // For pulseWidth = 411, maximum sampleRate value is 400. For pulseWidth = 215, the maximum 
-// sampleRate value is 800. For pulseWidth = 118, maximum sampleRate value is 1000
+// sampleRate value is 800. For pulseWidth = 118, maximum sampleRate value is 1000.
 int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs
 int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
 
