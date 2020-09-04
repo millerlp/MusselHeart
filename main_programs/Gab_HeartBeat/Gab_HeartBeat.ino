@@ -120,6 +120,7 @@ void setup() {
   delay(100);
   if (timeStatus() != timeSet) {
     Serial.println("Unable to sync with the RTC");
+    oled.println("RTC not set!");
   } else {
 #ifndef SERIALPLOTTER  
     Serial.println("RTC has set the system time");
@@ -179,6 +180,7 @@ void setup() {
 
   if (!SD.begin()) {
     SD.initErrorHalt("SdFatSdio begin() failed");
+    oled.println("No SD card found");
   }
   
 #ifndef SERIALPLOTTER
