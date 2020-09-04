@@ -147,34 +147,11 @@ void setup() {
   lastWriteMillis = myMillis;
   myCounter = 0;
 
-  //Sensor setup
-  for (byte i = 0; i < MAX_SENSORS; i++) {
-    tcaselect(i);
-    delayMicroseconds(20);
-
-    if (particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
-    {
-      // If sensor is present, mark it in the goodSensors array
-      goodSensors[i] = i;
-      numgoodSensors++;
-    } else {
-      // If sensor didn't show up, wait a bit and try a 2nd time
-      delay(5);
-      if(particleSensor.begin(Wire, I2C_SPEED_FAST)){
-        goodSensors[i] = i;
-        numgoodSensors++;
-      }
-    }
-    // Attempt to set up the sensor (this will still run if no sensor was found, and have no effect)
-    particleSensor.setup(IRledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
-    particleSensor.enableDIETEMPRDY(); //enable temp ready interrupt. Required to log temp, but each read takes 29ms
-    //      particleSensor.disableDIETEMPRDY(); //disable temp ready interrupt.
-    // Tweak individual settings
-    particleSensor.setPulseAmplitudeRed(REDledBrightness); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
-    particleSensor.setPulseAmplitudeIR(IRledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
-//      particleSensor.setPulseWidth(pulseWidth); //DANGER - this screws things up. Options: 69, 118, 215, 411. Higher values = more sensitivity
-    triggerTemperatureSample(); // Start the temperature sample (wait 29 ms before attempting to read)
-  }
+  // MAX30105 Sensor setup. This function will scan for avaialble
+  // sensors, and set sampling parameters for those that are found
+  // This will also store which channels are working, so that only 
+  // those channels are sampled and stored in the data files
+  scanSetupSensors(); // See function near bottom of this file
 
   if (numgoodSensors == 0){
     oled.println("No sensors");
@@ -189,11 +166,13 @@ void setup() {
         oled.print(" ");
       }
     }
+    oled.println();
   }
+  
 
   myTime = Teensy3Clock.get(); // Read current time from the Teensy rtc
 #ifndef SERIALPLOTTER
-  digitalClockDisplay(myTime); // digital clock display of the time
+  digitalClockDisplay(myTime); // digital clock display of the time to Serial
   //SD setup
   Serial.print("Initializing SD card...");
 #endif  
@@ -213,6 +192,7 @@ void setup() {
   Serial.print("Using IR file ");
   Serial.println(filename);
 #endif 
+//  oled.println(filename); // print IR filename to oled display
  
   // SD Naming Temperature file
   initTempFileName(SD, myFile2, myTime, filename2, serialValid, serialNumber, temp);
@@ -221,6 +201,7 @@ void setup() {
   Serial.print("Using Temp file ");
   Serial.println(filename2);
 #endif  
+//  oled.println(filename2); // print temperature filename to oled display
 //  delay(30); // Just make sure the first temperature sample has time to happen
   delay(5000); // Give time for user to read OLED screen
   oled.clear();
@@ -250,6 +231,10 @@ void loop() {
     // If a new day has started, create a new output file
     if ( oldDay != day(myTime) ) {
       oldDay = day(myTime); // update oldDay value to the new day
+      // Re-scan the available sensors each new day to make sure none have dropped off
+      // and are screwing up the data collection.
+      scanSetupSensors(); // See function near bottom of this file
+      
       // Close the current IR file
       myFile.close();
       // Start a new IR file
@@ -830,5 +815,41 @@ void printTimeOLED(time_t theTime){
     oled.print(second(theTime), DEC);
   // You may want to print a newline character
   // after calling this function i.e. Serial.println();
+}
 
+
+//-------------------------------------------------------------
+// A function to scan for available MAX30105 sensors
+// Saves a record of which sensors returned a valid signature (goodSensors[])
+// Saves a count of the number of good sensors (numgoodSensors)
+// Sets up each sensor using the user's parameters defined at the top of this program
+
+void scanSetupSensors (void){
+  numgoodSensors = 0; // reset to zero each time this function is called
+  for (byte i = 0; i < MAX_SENSORS; i++) {
+    tcaselect(i);
+    delayMicroseconds(20);
+    goodSensors[i] = 127; // Reset this value before scanning for the sensor
+    if (particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
+      {
+        // If sensor is present, mark it in the goodSensors array
+        goodSensors[i] = i;
+        numgoodSensors++;
+      } else {
+        // If sensor didn't show up, wait a bit and try a 2nd time
+        delay(5);
+        if(particleSensor.begin(Wire, I2C_SPEED_FAST)){
+          goodSensors[i] = i;
+          numgoodSensors++;
+        }
+      }
+      // If the sensor was marked good, set it up for our sampling needs
+    if (goodSensors[i] != 127){
+      particleSensor.setup(IRledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
+      particleSensor.enableDIETEMPRDY(); //enable temp ready interrupt. Required to log temp, but each read takes 29ms
+      // Tweak individual settings
+      particleSensor.setPulseAmplitudeRed(REDledBrightness); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
+      particleSensor.setPulseAmplitudeIR(IRledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
+    }
+  }
 }
