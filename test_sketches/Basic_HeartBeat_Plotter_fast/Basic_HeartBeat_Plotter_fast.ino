@@ -30,9 +30,9 @@
 
 MAX30105 particleSensor;
 // sensor configurations
-byte ledBrightness = 0x1F; //Options: 0=Off to 255=fully on
-byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32
+byte ledBrightness = 20; //Options: 0=Off to 255=fully on, try 10-30 to start
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
+byte sampleAverage = 2; //Options: 1, 2, 4, 8, 16, 32
 int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 // For pulseWidth = 411, maximum sampleRate value is 400. For pulseWidth = 215, the maximum 
 // sampleRate value is 800. For pulseWidth = 118, maximum sampleRate value is 1000.
@@ -65,7 +65,7 @@ void setup()
 //      particleSensor.enableDIETEMPRDY(); //enable temp ready interrupt. Required to log temp, but each read takes 29ms
 //      particleSensor.disableDIETEMPRDY(); //disable temp ready interrupt.
       // Tweak individual settings
-      particleSensor.setPulseAmplitudeRed(0x00); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
+      particleSensor.setPulseAmplitudeRed(0x01); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
       particleSensor.setPulseAmplitudeIR(ledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
 //      particleSensor.setPulseWidth(pulseWidth); //DANGER - this seems to screw things up! Options: 69, 118, 215, 411. Higher values = more sensitivity
 //      triggerTemperatureSample(); // Start the temperature sample (wait 29 ms before attempting to read)
@@ -85,11 +85,11 @@ void setup()
 
 #if (QUICKSAMPLE == 0 | QUICKSAMPLE == 1)
   //Pre-populate the plotter so that the Y scale is close to IR values
-  if (NUM_SENSORS == 1){
-    for (int x = 0 ; x < 500 ; x++) {
-      Serial.println(baseValue);
-    }
-  }
+//  if (NUM_SENSORS == 1){
+//    for (int x = 0 ; x < 500 ; x++) {
+//      Serial.println(baseValue);
+//    }
+//  }
 #endif
 
   myMillis = millis();  
@@ -167,36 +167,36 @@ uint32_t quickSampleIR(void) {
   
   // Start by waiting the maximum time needed for the 1st sample to be taken, based 
   // on the sample rate
-  switch (sampleRate) {
-    // Options 50, 100, 200, 400, 800, 1000, 1600, 3200 samples per second
-    case 50:
-      delay(20); // units milliseconds
-      break;
-    case 100:
-      delay(10);
-      break;
-    case 200:
-      delay(5);
-      break;
-    case 400:
-      delayMicroseconds(2500);
-      break;
-    case 800:
-      delayMicroseconds(1250);
-      break;
-    case 1000:
-      delay(1);
-      break;
-    case 1600:
-      delayMicroseconds(625);
-      break;
-    case 3200:
-      delayMicroseconds(313);
-      break;
-    default:
-      delay(5);
-      break;
-  }
+//  switch (sampleRate) {
+//    // Options 50, 100, 200, 400, 800, 1000, 1600, 3200 samples per second
+//    case 50:
+//      delay(20); // units milliseconds
+//      break;
+//    case 100:
+//      delay(10);
+//      break;
+//    case 200:
+//      delay(5);
+//      break;
+//    case 400:
+//      delayMicroseconds(2500);
+//      break;
+//    case 800:
+//      delayMicroseconds(1250);
+//      break;
+//    case 1000:
+//      delay(1);
+//      break;
+//    case 1600:
+//      delayMicroseconds(625);
+//      break;
+//    case 3200:
+//      delayMicroseconds(313);
+//      break;
+//    default:
+//      delay(5);
+//      break;
+//  }
    
   for (int avg = 0; avg < sampleAverage; avg++){
     // Now add in the delay for the actual LED flashes to happen
