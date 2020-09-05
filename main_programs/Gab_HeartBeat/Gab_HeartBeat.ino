@@ -1,18 +1,15 @@
-
-/* . GKalbach July 2020
+/*  GKalbach July 2020
       updated 2020-09-04 by LPM
 
        Sketch written for Teensy 3.5 Heart Rate Rev B
        This version scans the available MAX30105s at startup, and only
        collects data from ones that it finds. 
-       Separate files are written for IR data (20Hz sampling rate)
+       Separate files are written for IR data (10Hz sampling rate)
        and temperature data (0.03Hz sampling rate)
 
        This version uses the MAX30105 shutdown feature, but this can be
        disabled by commenting out the line #define SLEEP near the top of
        this file
-
-
 */
 
 #include "MAX30105.h"         // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
@@ -30,31 +27,29 @@
 //#define SERIALPLOTTER // comment this line out to shut off serial plotter output
 
 
-
-
-
 // MAX30105 sensor parameters
 MAX30105 particleSensor;
 // Create an array to hold numbers of good sensor channels (up to 8)
 byte goodSensors[] = {127,127,127,127,127,127,127,127};
 byte numgoodSensors = 0;
 // sensor configurations
-byte REDledBrightness = 0x01; // low value of 0x00 shuts it off, 0x01 is barely on
-byte IRledBrightness = 0x1F; //Options: 0=0x00 to 0xFF=fully on
-byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32
-byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
+byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. Only use 2
+byte REDledBrightness = 1; // low value of 0 shuts it off, 1 is barely on
+byte IRledBrightness = 20; //Options: 0=off to 255=fully on, try 10-30 initially. Too high will make noisy signal
+byte sampleAverage = 4; //Options: 1, 2, 4, 8, 16, 32, but only use 1, 2, or 4. 4 is preferred
+int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
+// For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
 int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
-int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs
-int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
+int adcRange = 4096; //Options: 2048, 4096, 8192, 16384. 4096 is standard
 
-#define TCAADDR 0x70
+#define TCAADDR 0x70 // I2C address for the I2C multiplexer chip
 
 // time components
 TimeElements tm;
 time_t myTime;
 uint8_t oldDay;
 uint8_t oldMinute;
-unsigned int myIntervalMS = 50;  // units milliseconds, desired interval between heart readings
+unsigned int myIntervalMS = 100;  // units milliseconds, desired interval between heart readings
 unsigned long myMillis;
 unsigned long lastWriteMillis;
 unsigned long tempMillis;
@@ -88,17 +83,30 @@ char temp[] = "TEMP"; // end of temperature file name
 SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 port
 #define I2C_ADDRESS1 0x3C //OLED address
 //Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire1, OLED_RESET);
- 
 
+//#define IRDELAYPIN 11 // for troubleshooting, can comment out
+//#define IRPIN 12      // for troubleshooting, can comment out
 
+int REDLED = 7; // PB1
+int GRNLED = 6; // PD5
+int BLUELED = 5; // PD6
+#define COMMON_ANODE
+
+//-----------------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
-  //while (!Serial); // wait for serial port to connect. Sketch won't run unless serial monitor is open with this line
+//  pinMode(IRPIN, OUTPUT); // testing purposes, can comment out
+//  pinMode(32, OUTPUT);  // testing purposes, can comment out
+//  pinMode(IRDELAYPIN, OUTPUT); // testing purposes, can comment out
+  pinMode(REDLED, OUTPUT); 
+  pinMode(GRNLED, OUTPUT);
+  pinMode(BLUELED, OUTPUT);  
+  digitalWrite(REDLED, HIGH); // for common anode LED, set high to shut off
+  digitalWrite(GRNLED, HIGH);
+  digitalWrite(BLUELED, HIGH); 
   Wire.setSCL(19);
   Wire.setSDA(18);
   Wire.begin(); // initialize I2C communication for MUX & sensors
-  
-   
    
   Wire1.begin(); // for OLED display
   Wire1.setSCL(37);
@@ -222,12 +230,12 @@ void loop() {
   // This if statement below will be true whenever the current millis() value is more than myIntervalMS
   // larger than myMillis
   if ( (millis() - myMillis) >= myIntervalMS) {
+//    digitalWriteFast(32, HIGH);  // for troubleshooting, can comment out
     // Always update myMillis whenever the if statement successfully executes so that the next
     // time around the if statement is comparing the time difference to this current time at the
     // start of the sampling cycle
     myMillis = millis();
-    myCounter++; // increment here, since we want to mark how many times (20 times) we go through
-    // the sampling cycle, rather than how many times each sensor gets sampled
+
     myTime = Teensy3Clock.get();
 
     // If a new day has started, create a new output file
@@ -268,7 +276,9 @@ void loop() {
           particleSensor.wakeUp(); // Wake up sensor to take sample
           delayMicroseconds(10); // Give the chip a chance to wake up
 #endif        
+//          digitalWriteFast(IRPIN, HIGH); // troubleshooting, can comment out
           uint32_t tempIR = quickSampleIR();
+//          digitalWriteFast(IRPIN, LOW); // troubleshooting, can comment out
           myFile.print(tempIR);
 #ifdef SERIALPLOTTER        
           Serial.print(tempIR);
@@ -338,7 +348,13 @@ void loop() {
         Serial.println("error opening file.");
       }
     }
-
+//    digitalWriteFast(32, LOW); // testing purposes, can be commented out
+    // Flash red LED if the sampling routine takes longer than the desired interval
+    if ( (millis() - myMillis) > (myIntervalMS+2)){
+      setColor(10,0,0); // turn on red
+    } else {
+      setColor(0,0,0); // turn off if we're less than the interval
+    }
   } // End of IR sampling routine (and temperature readout routine)
 
   
@@ -404,11 +420,11 @@ void digitalClockDisplay(time_t theTime) {
   // digital clock display of the time
   Serial.print(year(theTime));
   Serial.print(F("-"));
-  Serial.print(month(theTime));
+  printDigits(month(theTime));
   Serial.print(F("-"));
-  Serial.print(day(theTime));
+  printDigits(day(theTime));
   Serial.print(" ");
-  Serial.print(hour(theTime));
+  printDigits(hour(theTime));
   printDigits(minute(theTime));
   printDigits(second(theTime));
   Serial.println();
@@ -420,6 +436,23 @@ void printDigits(int digits) {
   if (digits < 10)
     Serial.print('0');
   Serial.print(digits);
+}
+
+//-------------------------------------------
+// LED color-setting function. Feed it 3 values for 
+// red, green, blue, between 0 to 256
+void setColor(int red, int green, int blue)
+{
+  // Brightness values run from 0 to 255, but a value of 256
+  // is needed to fully shut the LED off on Teensy
+  #ifdef COMMON_ANODE
+    red = 256 - red; 
+    green = 256 - green;
+    blue = 256 - blue;
+  #endif
+  analogWrite(REDLED, red);
+  analogWrite(GRNLED, green);
+  analogWrite(BLUELED, blue);  
 }
 
 //*********************************************
@@ -672,48 +705,14 @@ float readTemperatureSample(void) {
 //-----------------------------------------------
 // Custom sampling function for the MAX30105, calling functions in the MAX30105.h library
 uint32_t quickSampleIR(void) {
+//  digitalWriteFast(IRDELAYPIN, HIGH);  // troubleshooting, can comment out
   // Clear the MAX30105 FIFO buffer so that there will only be one new sample to read
   particleSensor.clearFIFO();
   uint16_t ledSampleTime; // units will be microseconds
-  
-  
+ 
   // Implement a delay for new samples to be collected in the FIFO. If sample averaging
   // is used, a loop will need to execute multiple times to allow the multiple samples
   // to be collected
-  
-  // Start by waiting the maximum time needed for the 1st sample to be taken, based 
-  // on the sample rate
-  switch (sampleRate) {
-    // Options 50, 100, 200, 400, 800, 1000, 1600, 3200 samples per second
-    case 50:
-      delay(20); // units milliseconds
-      break;
-    case 100:
-      delay(10);
-      break;
-    case 200:
-      delay(5);
-      break;
-    case 400:
-      delayMicroseconds(2500);
-      break;
-    case 800:
-      delayMicroseconds(1250);
-      break;
-    case 1000:
-      delay(1);
-      break;
-    case 1600:
-      delayMicroseconds(625);
-      break;
-    case 3200:
-      delayMicroseconds(313);
-      break;
-    default:
-      delay(5);
-      break;
-  }
-   
   for (int avg = 0; avg < sampleAverage; avg++){
     // Now add in the delay for the actual LED flashes to happen
     switch (pulseWidth) {
@@ -779,7 +778,12 @@ uint32_t quickSampleIR(void) {
   } // end up of delay loop
   delayMicroseconds(50); // Add in a little extra delay just to be safe
   // Query the FIFO buffer on the sensor for the most recent IR value
-  return (particleSensor.getIR());
+//  digitalWriteFast(IRDELAYPIN, LOW); // troubleshooting, can comment out
+//  digitalWriteFast(IRPIN, HIGH); // troubleshooting, can comment out
+  uint32_t tempIR = particleSensor.getIR();
+//  digitalWriteFast(IRPIN, LOW);  // troubleshooting, can comment out
+  return (tempIR);
+  
 } // end of quickSampleIR function
 
 ///--------------------------------------------------------------
