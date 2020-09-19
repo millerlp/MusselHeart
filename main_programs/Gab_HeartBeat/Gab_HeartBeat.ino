@@ -104,6 +104,14 @@ void setup() {
   digitalWrite(REDLED, HIGH); // for common anode LED, set high to shut off
   digitalWrite(GRNLED, HIGH);
   digitalWrite(BLUELED, HIGH); 
+
+  for (int i = 0; i<10; i++){
+    setColor(0,255,0);
+    delay(20);
+    setColor(0,0,0);
+    delay(20);
+  }
+  
   Wire.setSCL(19);
   Wire.setSDA(18);
   Wire.begin(); // initialize I2C communication for MUX & sensors
@@ -296,6 +304,8 @@ void loop() {
             Serial.print("\t");
 #endif
           }
+
+          }
           if (i >= (MAX_SENSORS - 1) ) { //start new line after the last sensor
             myFile.print(",");  // Modified to record millis value at end of cycle
             myFile.println(millis()); // Record the end time of the sampling cycle
@@ -304,12 +314,11 @@ void loop() {
             Serial.println();
 #endif
           }
-        }
+        }  // end of for loop
+      }  else {
+        Serial.println("error opening file.");
       }
-    }
-    else {
-      Serial.println("error opening file.");
-    }
+//    }  // end of if ( (millis() - myMillis)
     
     // Routine to read temperatures if the readTempsFlag has been set true elsewhere
     if (readTempsFlag == true){
