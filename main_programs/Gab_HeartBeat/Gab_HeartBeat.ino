@@ -11,7 +11,7 @@
        disabled by commenting out the line #define SLEEP near the top of
        this file
 
-       See around line 46 for setting the individual brightness of each IR LED
+       See around line 51 for setting the individual brightness of each IR LED
        channel
        Look for this line: byte IRledBrightness[] = {20, 20, 20, 20, 20, 20, 20, 20};
 
