@@ -87,10 +87,19 @@ SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 por
 //#define IRDELAYPIN 11 // for troubleshooting, can comment out
 //#define IRPIN 12      // for troubleshooting, can comment out
 
-int REDLED = 7; // PB1
-int GRNLED = 6; // PD5
-int BLUELED = 5; // PD6
-#define COMMON_ANODE
+int REDLED = 7; //  Teensy Pin D7
+int GRNLED = 6; //  Teensy Pin D6
+int BLUELED = 5; //  Teensy Pin D5
+#define COMMON_ANODE  // For RGB LED
+
+const int BATT_MONITOR_EN = 17; // Digital pin to enable battery voltage monitor circuit
+const int BATT_MONITOR = A10;  //  Analog pin to read battery voltage
+double dividerRatio = 5.7; // Ratio of voltage divider (47k + 10k) / 10k = 5.7
+int resolutionADC = 1024;
+// The refVoltage is coming from a MAX6103 precision voltage reference chip, so it should be 3.000
+double refVoltage = 3.00; // Voltage at AREF pin on Teensy
+double batteryVolts = 0; // Estimated battery voltage returned from readBatteryVoltage function
+
 
 //-----------------------------------------------------------------------------------
 void setup() {
@@ -111,6 +120,13 @@ void setup() {
     setColor(0,0,0);
     delay(20);
   }
+
+
+  // Battery monitor pins
+  analogReference(EXTERNAL);
+  analogReadResolution(10); // set 10 bit resolution
+  pinMode(BATT_MONITOR, INPUT);
+  pinMode(BATT_MONITOR_EN, OUTPUT);
   
   Wire.setSCL(19);
   Wire.setSDA(18);
@@ -221,6 +237,16 @@ void setup() {
 #endif  
 //  oled.println(filename2); // print temperature filename to oled display
 //  delay(30); // Just make sure the first temperature sample has time to happen
+
+  //------------------------
+  // Check raw battery voltage, see function at bottom of this file
+  batteryVolts = readBatteryVoltage(BATT_MONITOR_EN,BATT_MONITOR,dividerRatio,refVoltage,resolutionADC);
+  oled.print("Battery: ");
+  oled.print(batteryVolts,3);
+  oled.println("V");
+  //------------------------
+
+
   delay(5000); // Give time for user to read OLED screen
   oled.clear();
   // Manual shut down of SSD1306 oled display driver
@@ -434,14 +460,15 @@ void digitalClockDisplay(time_t theTime) {
   printDigits(day(theTime));
   Serial.print(" ");
   printDigits(hour(theTime));
+  Serial.print(":");
   printDigits(minute(theTime));
+  Serial.print(":");
   printDigits(second(theTime));
   Serial.println();
 }
 //****************************
 void printDigits(int digits) {
   // utility function for digital clock display: prints preceding colon and leading 0
-  Serial.print(":");
   if (digits < 10)
     Serial.print('0');
   Serial.print(digits);
@@ -867,4 +894,34 @@ void scanSetupSensors (void){
       particleSensor.setPulseAmplitudeIR(IRledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
     }
   }
+}
+
+//--------------------------------------------------------------------
+//------------readBatteryVoltage-------------------
+// readBatteryVoltage function. This will read the AD convertor
+// and calculate the approximate battery voltage (before the
+// voltage regulator). Returns a floating point value for
+// voltage.
+float readBatteryVoltage (int BATT_MONITOR_EN, int BATT_MONITOR, double dividerRatio, double refVoltage,int resolutionADC){
+    // Turn on the battery voltage monitor circuit
+    digitalWrite(BATT_MONITOR_EN, HIGH);
+    delay(1);
+    // Read the analog input pin
+    unsigned int rawAnalog = 0;
+    analogRead(BATT_MONITOR); // This initial value is ignored
+    delay(3); // Give the ADC time to stablize
+    // Take 4 readings
+    for (byte i = 0; i<4; i++){
+        rawAnalog = rawAnalog + analogRead(BATT_MONITOR);
+        delay(2);
+    }
+    // Do a 2-bit right shift to divide rawAnalog
+    // by 4 to get the average of the 4 readings
+    rawAnalog = rawAnalog >> 2;
+    // Shut off the battery voltage sense circuit
+    digitalWrite(BATT_MONITOR_EN, LOW);
+    // Convert the rawAnalog count value (0-4096) into a voltage
+    // Relies on global variables dividerRatio and refVoltage
+    double reading = rawAnalog * dividerRatio * refVoltage / (double)resolutionADC;
+    return reading; // return voltage result
 }
