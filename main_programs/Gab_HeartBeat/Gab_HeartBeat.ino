@@ -10,6 +10,10 @@
        This version uses the MAX30105 shutdown feature, but this can be
        disabled by commenting out the line #define SLEEP near the top of
        this file
+
+       See around line 46 for setting the individual brightness of each IR LED
+       channel
+       Look for this line: byte IRledBrightness[] = {20, 20, 20, 20, 20, 20, 20, 20};
 */
 
 #include "MAX30105.h"         // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
@@ -35,7 +39,11 @@ byte numgoodSensors = 0;
 // sensor configurations
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. Only use 2
 byte REDledBrightness = 1; // low value of 0 shuts it off, 1 is barely on
-byte IRledBrightness = 20; //Options: 0=off to 255=fully on, try 10-30 initially. Too high will make noisy signal
+//byte IRledBrightness = 20; //Options: 0=off to 255=fully on, try 10-30 initially. Too high will make noisy signal
+// Define IR led brightness setting for each of the 8 channels
+// Options: 0=off to 255=fully on, try 10-30 initially. Too high will make noisy signal
+//          Channel =      1   2   3   4   5   6   7   8
+byte IRledBrightness[] = {20, 20, 20, 20, 20, 20, 20, 20};
 byte sampleAverage = 4; //Options: 1, 2, 4, 8, 16, 32, but only use 1, 2, or 4. 4 is preferred
 int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
 // For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
@@ -887,11 +895,11 @@ void scanSetupSensors (void){
       }
       // If the sensor was marked good, set it up for our sampling needs
     if (goodSensors[i] != 127){
-      particleSensor.setup(IRledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
+      particleSensor.setup(IRledBrightness[i], sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
       particleSensor.enableDIETEMPRDY(); //enable temp ready interrupt. Required to log temp, but each read takes 29ms
       // Tweak individual settings
       particleSensor.setPulseAmplitudeRed(REDledBrightness); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
-      particleSensor.setPulseAmplitudeIR(IRledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
+      particleSensor.setPulseAmplitudeIR(IRledBrightness[i]); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
     }
   }
 }
