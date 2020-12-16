@@ -1,11 +1,11 @@
 /*  GKalbach July 2020
-      updated 2020-09-04 by LPM
+      updated 2020-12-16 by LPM
 
        Sketch written for Teensy 3.5 Heart Rate Rev B
        This version scans the available MAX30105s at startup, and only
        collects data from ones that it finds. 
        Separate files are written for IR data (10Hz sampling rate)
-       and temperature data (0.03Hz sampling rate)
+       and temperature data (0.03Hz sampling rate = 30 seconds)
 
        This version uses the MAX30105 shutdown feature, but this can be
        disabled by commenting out the line #define SLEEP near the top of
