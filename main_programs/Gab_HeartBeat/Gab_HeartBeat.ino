@@ -14,6 +14,11 @@
        See around line 46 for setting the individual brightness of each IR LED
        channel
        Look for this line: byte IRledBrightness[] = {20, 20, 20, 20, 20, 20, 20, 20};
+
+       If you're using really long leads on the sensors and they're not being detected
+       on startup, chnage the I2C communication speed from I2C_SPEED_FAST to I2C_SPEED_STANDARD
+       This can be changed in the scanSetupSensors() function definition near the 
+       bottom of the file.
 */
 
 #include "MAX30105.h"         // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
