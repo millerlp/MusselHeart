@@ -17,7 +17,7 @@
 #include <EEPROM.h>
 
 // serial number to write to chip. Always increment this value and save this file
-char serialnumber[]="SN01";
+char serialnumber[]="SN05";
 
 void setup(){
 	Serial.begin(57600);
