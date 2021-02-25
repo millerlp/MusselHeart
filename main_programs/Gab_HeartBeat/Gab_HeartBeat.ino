@@ -16,7 +16,7 @@
        Look for this line: byte IRledBrightness[] = {20, 20, 20, 20, 20, 20, 20, 20};
 
        If you're using really long leads on the sensors and they're not being detected
-       on startup, chnage the I2C communication speed from I2C_SPEED_FAST to I2C_SPEED_STANDARD
+       on startup, change the I2C communication speed from I2C_SPEED_FAST to I2C_SPEED_STANDARD
        This can be changed in the scanSetupSensors() function definition near the 
        bottom of the file.
 */
