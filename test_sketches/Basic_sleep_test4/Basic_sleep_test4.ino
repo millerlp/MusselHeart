@@ -93,7 +93,7 @@ void setup() {
 //  while(!Serial); // wait for serial monitor to connect
 //  Serial.println("Hello");
   delay(200);
-  // set the Time library to use Teensy 3.0's RTC to keep time
+  // set the Time library to use Teensy 3.5's RTC to keep time
   setSyncProvider(getTeensy3Time);
 
   Wire1.begin(); // for OLED display
