@@ -1,15 +1,15 @@
 /* HeartBeat_interval_sample.ino
- *  
- *  A version of the main datalogging program to work with
- *  Teensy3.5 and heart rate daughterboard RevB. 
- *  
- *  This version will sample the heart rate sensors at 10Hz 
- *  for 30 seconds, then take a round of temperature readings,
- *  and put everything to sleep for the remainder of the minute
- *  using the Snooze library, in an attempt to lower the overall
- *  power usage.
- *  
- */
+
+    A version of the main datalogging program to work with
+    Teensy3.5 and heart rate daughterboard RevB.
+
+    This version will sample the heart rate sensors at 10Hz
+    for 30 seconds, then take a round of temperature readings,
+    and put everything to sleep for the remainder of the minute
+    using the Snooze library, in an attempt to lower the overall
+    power usage.
+
+*/
 
 #include "MAX30105.h"         // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
 #include <Snooze.h>   // https://github.com/duff2013/Snooze
@@ -34,7 +34,7 @@ int scopePin0 = 30; // for debugging
 // MAX30105 sensor parameters
 MAX30105 particleSensor;
 // Create an array to hold numbers of good sensor channels (up to 8)
-byte goodSensors[] = {127,127,127,127,127,127,127,127};
+byte goodSensors[] = {127, 127, 127, 127, 127, 127, 127, 127};
 byte numgoodSensors = 0;
 // sensor configurations
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. Only use 2
@@ -61,9 +61,8 @@ uint8_t oldMinute;
 // Snooze library setup
 SnoozeTimer timer;  // LowPowerTimer millisecond timer object
 SnoozeAlarm  alarm; // RTC alarm object
-SnoozeBlock config_teensy35(timer, alarm);
-SnoozeBlock config_teensy35_2(alarm);
-//SnoozeBlock config_teensy35(alarm);   // wake from RTC alarm only
+SnoozeBlock config_teensy35(timer, alarm); // wake from ms timer or RTC
+SnoozeBlock config_teensy35_2(alarm);  // wake from RTC alarm only
 int who; // used to track source of Snooze wakeup
 //---------------------------------------
 // OLED components
@@ -71,7 +70,6 @@ int who; // used to track source of Snooze wakeup
 #define SCREEN_TIMEOUT 10 //Seconds before OLED display shuts off
 #define SCREEN_WIDTH 128 // OLED pixel width
 #define SCREEN_HEIGHT 64 // OLED pixel height
-//#define OLED_RESET     4 // OLED reset pin num
 SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 port
 #define I2C_ADDRESS1 0x3C //OLED address
 
@@ -112,17 +110,17 @@ void setup() {
   Serial.begin(115200);
   //**************************
   // RGB LED setup
-  pinMode(REDLED, OUTPUT); 
+  pinMode(REDLED, OUTPUT);
   pinMode(GRNLED, OUTPUT);
-  pinMode(BLUELED, OUTPUT);  
+  pinMode(BLUELED, OUTPUT);
   digitalWrite(REDLED, HIGH); // for common anode LED, set high to shut off
   digitalWrite(GRNLED, HIGH);
-  digitalWrite(BLUELED, HIGH); 
+  digitalWrite(BLUELED, HIGH);
   // Flash green quickly to denote restart
-  for (int i = 0; i<10; i++){
-    setColor(0,255,0);
+  for (int i = 0; i < 10; i++) {
+    setColor(0, 255, 0);
     delay(20);
-    setColor(0,0,0);
+    setColor(0, 0, 0);
     delay(20);
   }
   //***************************
@@ -141,7 +139,7 @@ void setup() {
   Wire.setSDA(18);
   Wire.begin(); // initialize I2C communication for MUX & sensors
   //**********************************
-  // OLED I2C setup 
+  // OLED I2C setup
   Wire1.begin(); // for OLED display
   Wire1.setSCL(37);
   Wire1.setSDA(38);
@@ -164,8 +162,8 @@ void setup() {
   if (timeStatus() != timeSet) {
     Serial.println("Unable to sync with the RTC");
     oled.println("RTC not set!");
-  } else { 
-    Serial.println("RTC has set the system time"); 
+  } else {
+    Serial.println("RTC has set the system time");
   }
   digitalClockDisplay(myTime); Serial.println();
   oldDay = day(myTime); // Store current day
@@ -185,19 +183,19 @@ void setup() {
   //*******************************
   // MAX30105 Sensor setup. This function will scan for avaialble
   // sensors, and set sampling parameters for those that are found
-  // This will also store which channels are working, so that only 
+  // This will also store which channels are working, so that only
   // those channels are sampled and stored in the data files
   scanSetupSensors(); // See function near bottom of this file
-  if (numgoodSensors == 0){
+  if (numgoodSensors == 0) {
     oled.println("No sensors");
     oled.println("found");
   } else {
     oled.print("Found ");
     oled.print(numgoodSensors);
     oled.println(" sensors:");
-    for (byte i = 0; i < MAX_SENSORS; i++){
-      if (goodSensors[i] != 127){
-        oled.print(goodSensors[i]+1); // Start labeling at 1 instead of 0
+    for (byte i = 0; i < MAX_SENSORS; i++) {
+      if (goodSensors[i] != 127) {
+        oled.print(goodSensors[i] + 1); // Start labeling at 1 instead of 0
         oled.print(" ");
       }
     }
@@ -205,12 +203,12 @@ void setup() {
   }
   // Shut the sensors back down for now
   for (byte i = 0; i < MAX_SENSORS; i++) {
-    if (goodSensors[i] != 127){
-      tcaselect(i);        
+    if (goodSensors[i] != 127) {
+      tcaselect(i);
       particleSensor.shutDown(); // shut down sensor to save power
     }
   }
-  
+
   //********************************
   // SD card setup
   myTime = Teensy3Clock.get(); // Read current time from the Teensy rtc
@@ -220,27 +218,28 @@ void setup() {
   if (!SD.begin()) {
     oled.println("No SD card found");
     SD.initErrorHalt("SdFatSdio begin() failed");
-    setColor(255,0,0);
+    setColor(255, 0, 0);
   }
   Serial.println("Initialization done.");
   // SD Naming IR file
   initFileName(SD, IRFile, myTime, filename, serialValid, serialNumber);
   Serial.print("Using IR file ");
   Serial.println(filename);
-    // SD Naming Temperature file
+  // SD Naming Temperature file
   initTempFileName(SD, TEMPFile, myTime, filename2, serialValid, serialNumber, temp);
   Serial.print("Using Temp file ");
   Serial.println(filename2);
   //*****************************
   // Check raw battery voltage, see function at bottom of this file
-  batteryVolts = readBatteryVoltage(BATT_MONITOR_EN,BATT_MONITOR,dividerRatio,refVoltage,resolutionADC);
+  batteryVolts = readBatteryVoltage(BATT_MONITOR_EN, BATT_MONITOR, dividerRatio, refVoltage, resolutionADC);
   oled.print("Battery: ");
-  oled.print(batteryVolts,3);
+  oled.print(batteryVolts, 3);
   oled.println("V");
+  delay(2000);
   //*********************************
   // Idle while waiting for a new minute to start
   myTime = Teensy3Clock.get(); // Read current time from the Teensy rtc
-  while (second(myTime) != 0){
+  while (second(myTime) != 0) {
     alarm.setAlarm(myTime + 1); // set alarm 1 second in future
     Snooze.deepSleep( config_teensy35); // sleep until second rolls over
     oled.clear();
@@ -257,25 +256,25 @@ void setup() {
   Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
   Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
   Wire1.endTransmission(); // stop transmitting
-  
+
 } // end of setup()
 
 void loop() {
   /* TODOs:
-   *  1. Check current time from RTC. If new day, open new files
-   *  2. If seconds 0-30 of the minute, run the IntervalTimer to 
-   *  generate 10Hz interrupts that will trigger a round of heart 
-   *  rate sampling
-   *  3. If seconds 30 is reached, take a set of temperature readings 
-   *  to write to the 2nd file, along with battery voltage
-   *  4. Shut down heart sensors and Teensy3.5, using rtcAlarm() function
-   *  from Snooze library to trigger a wake up at the start of the next 
-   *  minute
-   */
+      1. Check current time from RTC. If new day, open new files
+      2. If seconds 0-30 of the minute, run the IntervalTimer to
+      generate 10Hz interrupts that will trigger a round of heart
+      rate sampling
+      3. If seconds 30 is reached, take a set of temperature readings
+      to write to the 2nd file, along with battery voltage
+      4. Shut down heart sensors and Teensy3.5, using rtcAlarm() function
+      from Snooze library to trigger a wake up at the start of the next
+      minute
+  */
   myTime = Teensy3Clock.get();
   digitalWriteFast(scopePin0, HIGH); // debugging, can comment out
   scopePinState = HIGH; // debugging, can comment out
-  
+
   time_t currTime = myTime; // Copy for later
   // If a new day has started, create a new output file
   if ( oldDay != day(myTime) ) {
@@ -283,7 +282,7 @@ void loop() {
     // Re-scan the available sensors each new day to make sure none have dropped off
     // and are screwing up the data collection.
     scanSetupSensors(); // See function near bottom of this file
-    
+
     // Close the current IR file
     IRFile.close();
     // Start a new IR file
@@ -293,93 +292,100 @@ void loop() {
     // Start a new temperature file
     initTempFileName(SD, TEMPFile, myTime, filename2, serialValid, serialNumber, temp);
   }
-  
+
   while ( second(myTime) < 30 ) {
     elapsedMillis sampleTimer = 0;
-     // Start each time through this loop by reawakening IR sensors
-     // Reopen IR logfile. If opening fails, notify the user
+    // Start each time through this loop by reawakening IR sensors
+    // Reopen IR logfile. If opening fails, notify the user
     if (!IRFile.isOpen()) {
       if (!IRFile.open(filename, O_RDWR | O_CREAT | O_AT_END)) {
         Serial.println("Could not reopen file");
       }
     }
-     if (IRFile.isOpen()){
-       unsigned long myMillis = millis();        
-       IRFile.print(myMillis); IRFile.print(","); // keep track of millis() value at start of sampling round
-       IRFile.print(myTime); IRFile.print(",");  // print POSIX time value (one long number, seconds since 1970-1-1 00:00)
-       IRFile.print(year(myTime)); IRFile.print("-"); IRFile.print(month(myTime)); IRFile.print("-"); IRFile.print(day(myTime));
-       IRFile.print(" "); IRFile.print(hour(myTime)); IRFile.print(":"); IRFile.print(minute(myTime)); IRFile.print(":"); IRFile.print(second(myTime));
-       IRFile.print(",");
-     
-       for (byte i = 0; i < MAX_SENSORS; i++) {
+
+    if (IRFile.isOpen()) {
+      unsigned long myMillis = millis();
+      IRFile.print(myMillis); IRFile.print(","); // keep track of millis() value at start of sampling round
+      IRFile.print(myTime); IRFile.print(",");  // print POSIX time value (one long number, seconds since 1970-1-1 00:00)
+      IRFile.print(year(myTime)); IRFile.print("-"); IRFile.print(month(myTime)); IRFile.print("-"); IRFile.print(day(myTime));
+      IRFile.print(" "); IRFile.print(hour(myTime)); IRFile.print(":"); IRFile.print(minute(myTime)); IRFile.print(":"); IRFile.print(second(myTime));
+      IRFile.print(",");
+
+      for (byte i = 0; i < MAX_SENSORS; i++) {
         if (goodSensors[i] != 127) {
           tcaselect(i);
           particleSensor.wakeUp(); // Wake up sensor to take sample
-          delayMicroseconds(10); // Give the chip a chance to wake up      
-  //          digitalWriteFast(IRPIN, HIGH); // troubleshooting, can comment out
+          delayMicroseconds(10); // Give the chip a chance to wake up
+          //          digitalWriteFast(IRPIN, HIGH); // troubleshooting, can comment out
           uint32_t tempIR = quickSampleIR();
-  //          digitalWriteFast(IRPIN, LOW); // troubleshooting, can comment out
+          //          digitalWriteFast(IRPIN, LOW); // troubleshooting, can comment out
           IRFile.print(tempIR);
           particleSensor.shutDown(); // shut down sensor once sample is taken to save power
-  
+
           if (i < (MAX_SENSORS - 1)) {
-              IRFile.print(",");
+            IRFile.print(",");
           }
         }
         if (i >= (MAX_SENSORS - 1) ) { //start new line after the last sensor
-            IRFile.print(",");  // Modified to record millis value at end of cycle
-            IRFile.println(millis()); // Record the end time of the sampling cycle
-            
+          IRFile.print(",");  // Modified to record millis value at end of cycle
+          IRFile.println(millis()); // Record the end time of the sampling cycle
+
         }
       }
-     } else {
+    } else {
       Serial.println("error opening file.");
-     }
-     while ( sampleTimer < FAST_SAMPLE_INTERVAL_MS){
-        // chill out waiting for next sample interval
-     }
-     // debugging chunk, can comment out
-     digitalWriteFast(scopePin0, !scopePinState);
-     if (scopePinState == HIGH){
-        scopePinState = LOW;
-      } else {
-        scopePinState = HIGH;
-      }
-      // end of debugging chunk
-     readTempsFlag = true;
-     myTime = Teensy3Clock.get(); // update myTime
-     
+    }
+    while ( sampleTimer < FAST_SAMPLE_INTERVAL_MS ) {
+      // chill out waiting for next sample interval
+      // It would be nice to sleep the Teensy here, but
+      // the milliseconds timer loses a bit of time each
+      // time it goes in/out of sleep modes, and the 
+      // sampleTimer value stops updating
+    }
+    // debugging chunk, can comment out
+    digitalWriteFast(scopePin0, !scopePinState);
+    if (scopePinState == HIGH) {
+      scopePinState = LOW;
+    } else {
+      scopePinState = HIGH;
+    }
+    // end of debugging chunk
+    readTempsFlag = true;
+    myTime = Teensy3Clock.get(); // update myTime
+
   }  // end of while loop up to 30 seconds
   // while loop quits after 30 seconds of IR samples have been taken
-  
-  
+
+
 
   //**********************************************************
-  // Temperature sampling 
+  // Temperature sampling
   // We arrive here when the RTC reports a seconds value of 30
-  // At this point we stop sampling the IR sensors and instead 
-  // take one round of temperature values if the readTempsFlag 
+  // At this point we stop sampling the IR sensors and instead
+  // take one round of temperature values if the readTempsFlag
   // is currently true. It will be set to false after reading
   // one set of temperature values at the 30 second mark
   if ( (second(myTime) == 30) & (readTempsFlag == true) ) {
-    IRFile.close(); // close this file for now  
+    IRFile.close(); // close this file for now
     readTempsFlag = false;  // Set false so that this only runs once per minute
     for (byte i = 0; i < MAX_SENSORS; i++) {
-      if (goodSensors[i] != 127){
-        tcaselect(i);    
+      if (goodSensors[i] != 127) {
+        tcaselect(i);
         particleSensor.wakeUp(); // wake up sensor
-        delayMicroseconds(10);     
-        triggerTemperatureSample(); // start temp sample so that it's ready by the next cycle through the main loop  
-        // We won't put the sensor back to sleep on this cycle so that it can complete its temperature reading
+        delayMicroseconds(10);
+        triggerTemperatureSample(); // start temp sample so that it's ready by the
+                                    // next cycle through the main loop
+        // We won't put the sensor back to sleep on this cycle so that 
+        // it can complete its temperature reading
       }
     }
     timer.setTimer(30);  // units milliseconds
     who = Snooze.deepSleep( config_teensy35 ); // Sleep for a few ms
-    // This should give sufficient time for the sensors to read 
+    // This should give sufficient time for the sensors to read
     // their temperatures (about 29 milliseconds)
     unsigned long tempMillis = millis(); // update this for the file
     myTime = Teensy3Clock.get();
-  
+
     // Reopen logfile. If opening fails, notify the user
     if (!TEMPFile.isOpen()) {
       if (!TEMPFile.open(filename2, O_RDWR | O_CREAT | O_AT_END)) {
@@ -392,38 +398,46 @@ void loop() {
       TEMPFile.print(year(myTime)); TEMPFile.print("-"); TEMPFile.print(month(myTime)); TEMPFile.print("-"); TEMPFile.print(day(myTime));
       TEMPFile.print(" "); TEMPFile.print(hour(myTime)); TEMPFile.print(":"); TEMPFile.print(minute(myTime)); TEMPFile.print(":"); TEMPFile.print(second(myTime));
       TEMPFile.print(",");
-  
-      // Loop through sensors in sequence. 
+
+      // Loop through sensors in sequence.
       for (byte i = 0; i < MAX_SENSORS; i++) {
-        if (goodSensors[i] != 127){
+        if (goodSensors[i] != 127) {
           tcaselect(i);
-          TEMPFile.print(readTemperatureSample()); TEMPFile.print(",");          
+          TEMPFile.print(readTemperatureSample()); TEMPFile.print(",");
           particleSensor.shutDown(); // shut down sensor to save power
         }
       }
       TEMPFile.print(millis());
       TEMPFile.print(",");
       // Read battery voltage and add to the file
-      batteryVolts = readBatteryVoltage(BATT_MONITOR_EN,BATT_MONITOR,dividerRatio,refVoltage,resolutionADC);
-      TEMPFile.println(batteryVolts,3); // Write value to file
-      TEMPFile.close();  
-       
+      batteryVolts = readBatteryVoltage(BATT_MONITOR_EN, BATT_MONITOR, dividerRatio, refVoltage, resolutionADC);
+      TEMPFile.println(batteryVolts, 3); // Write value to file
+      TEMPFile.close();
+
     }
     else {
       Serial.println("error opening temperature file.");
     }
-    for (int i = 0; i<4; i++){
-      setColor(0,255,0);
+    // Flash to let user know we just finished the 30 seconds of IR sampling 
+    // and the temperature readings, and will be going to sleep next
+    for (int i = 0; i < 4; i++) {
+      setColor(0, 255, 0);
       delay(5);
-      setColor(0,0,0);
+      setColor(0, 0, 0);
       delay(5);
     }
   } // end of if (myTime == 30 & readTempsFlag == true) section
-  
+
   //*****************************************************
   // After the temperature samples have been taken, spend the
   // rest of the minute in Snooze to save power
-  
+
+  // Here we assume the currTime value still has a time stored from
+  // when the previous minute turned over at the start of the main
+  // loop, so we add SAMPLE_INTERVAL_SEC (usually 60 seconds)
+  // to it to create an alarm (1 minute) in the future from currTime
+  // which should cause the device to reawaken exactly when the real
+  // time clock rolls over at the start of the next minute HH:MM:00
   alarm.setAlarm( currTime + SAMPLE_INTERVAL_SEC );
   // Hibernate using the config_teensy35_2 configuration which only
   // listens for the RTC Alarm (ignores the faster timer wakeup)
@@ -470,27 +484,28 @@ void digitalClockDisplay(time_t theTime) {
 }
 //****************************
 void printDigits(int digits) {
-  // utility function for digital clock display: prints preceding colon and leading 0
+  // utility function for digital clock display: 
+  // prints a leading 0 on time values less than 10
   if (digits < 10)
     Serial.print('0');
   Serial.print(digits);
 }
 
 //-------------------------------------------
-// LED color-setting function. Feed it 3 values for 
+// LED color-setting function. Feed it 3 values for
 // red, green, blue, between 0 to 256
 void setColor(int red, int green, int blue)
 {
   // Brightness values run from 0 to 255, but a value of 256
   // is needed to fully shut the LED off on Teensy
-  #ifdef COMMON_ANODE
-    red = 256 - red; 
-    green = 256 - green;
-    blue = 256 - blue;
-  #endif
+#ifdef COMMON_ANODE
+  red = 256 - red;
+  green = 256 - green;
+  blue = 256 - blue;
+#endif
   analogWrite(REDLED, red);
   analogWrite(GRNLED, green);
-  analogWrite(BLUELED, blue);  
+  analogWrite(BLUELED, blue);
 }
 
 //*********************************************
@@ -586,7 +601,7 @@ void initFileName(SdFatSdio& SD, File& IRFile, time_t time1, char *filename, boo
   IRFile.print("DateTime"); IRFile.print(",");
   for (int i = 0; i < MAX_SENSORS; i++) { // Write column names for each sensor
     if (goodSensors[i] != 127) { // Only print column headers for active sensors
-      IRFile.print("Sensor"); IRFile.print(goodSensors[i]+1); IRFile.print("IR,");
+      IRFile.print("Sensor"); IRFile.print(goodSensors[i] + 1); IRFile.print("IR,");
     }
   }
   IRFile.println("endMillis");
@@ -667,7 +682,7 @@ void initTempFileName(SdFatSdio& SD, File& TEMPFile, time_t time1, char *filenam
 
   // Next change the counter on the end of the filename
   // (digits 14+15) to increment count for files generated on
-  // the same day. This shouldn't come into play
+  // the same minute. This shouldn't come into play
   // during a normal data run, but can be useful when
   // troubleshooting.
   for (uint8_t i = 0; i < 100; i++) {
@@ -693,8 +708,8 @@ void initTempFileName(SdFatSdio& SD, File& TEMPFile, time_t time1, char *filenam
   TEMPFile.print("UnixTime"); TEMPFile.print(",");
   TEMPFile.print("DateTime"); TEMPFile.print(",");
   for (int i = 0; i < MAX_SENSORS; i++) { // Write column names for each sensor
-    if (goodSensors[i] != 127){
-      TEMPFile.print("Sensor"); TEMPFile.print(goodSensors[i]+1); TEMPFile.print("TempC,");
+    if (goodSensors[i] != 127) {
+      TEMPFile.print("Sensor"); TEMPFile.print(goodSensors[i] + 1); TEMPFile.print("TempC,");
     }
   }
   TEMPFile.print("endMillis");  TEMPFile.print(",");
@@ -702,11 +717,11 @@ void initTempFileName(SdFatSdio& SD, File& TEMPFile, time_t time1, char *filenam
 
   // Update the file's creation date, modify date, and access date.
   TEMPFile.timestamp(T_CREATE, year(time1), month(time1), day(time1),
-                    hour(time1), minute(time1), second(time1));
+                     hour(time1), minute(time1), second(time1));
   TEMPFile.timestamp(T_WRITE, year(time1), month(time1), day(time1),
-                    hour(time1), minute(time1), second(time1));
+                     hour(time1), minute(time1), second(time1));
   TEMPFile.timestamp(T_ACCESS, year(time1), month(time1), day(time1),
-                    hour(time1), minute(time1), second(time1));
+                     hour(time1), minute(time1), second(time1));
   TEMPFile.close(); // force the data to be written to the file by closing it
 } // end of initTempFileName function
 
@@ -744,20 +759,20 @@ float readTemperatureSample(void) {
 //-----------------------------------------------
 // Custom sampling function for the MAX30105, calling functions in the MAX30105.h library
 uint32_t quickSampleIR(void) {
-//  digitalWriteFast(IRDELAYPIN, HIGH);  // troubleshooting, can comment out
+  //  digitalWriteFast(IRDELAYPIN, HIGH);  // troubleshooting, can comment out
   // Clear the MAX30105 FIFO buffer so that there will only be one new sample to read
   particleSensor.clearFIFO();
   uint16_t ledSampleTime; // units will be microseconds
- 
+
   // Implement a delay for new samples to be collected in the FIFO. If sample averaging
   // is used, a loop will need to execute multiple times to allow the multiple samples
   // to be collected
-  for (int avg = 0; avg < sampleAverage; avg++){
+  for (int avg = 0; avg < sampleAverage; avg++) {
     // Now add in the delay for the actual LED flashes to happen
     switch (pulseWidth) {
       // options for pulseWidth: 69, 118, 215, 411 microseconds
       case 69:
-        ledSampleTime = pulseWidth + 358 + pulseWidth; 
+        ledSampleTime = pulseWidth + 358 + pulseWidth;
         delayMicroseconds(ledSampleTime);
         break;
       case 118:
@@ -780,11 +795,11 @@ uint32_t quickSampleIR(void) {
     // If more than one sample is being averaged, you need to
     // further wait for the start of the next sampling cycle,
     // which is determined by the sampleRate and how long it just
-    // took for the red and IR leds to be sampled. This won't 
+    // took for the red and IR leds to be sampled. This won't
     // execute on the last sample of the average because it isn't
     // needed after the IR LED is read for the last time
     if (avg < (sampleAverage - 1)) {
-      switch (sampleRate){
+      switch (sampleRate) {
         case 50:
           delayMicroseconds(20000 - ledSampleTime);
           break;
@@ -811,53 +826,53 @@ uint32_t quickSampleIR(void) {
           break;
         default:
           delayMicroseconds(5000 - ledSampleTime);
-          break;     
+          break;
       } // end of switch statement
     } // end of if statement
   } // end up of delay loop
   delayMicroseconds(50); // Add in a little extra delay just to be safe
   // Query the FIFO buffer on the sensor for the most recent IR value
-//  digitalWriteFast(IRDELAYPIN, LOW); // troubleshooting, can comment out
-//  digitalWriteFast(IRPIN, HIGH); // troubleshooting, can comment out
+  //  digitalWriteFast(IRDELAYPIN, LOW); // troubleshooting, can comment out
+  //  digitalWriteFast(IRPIN, HIGH); // troubleshooting, can comment out
   uint32_t tempIR = particleSensor.getIR();
-//  digitalWriteFast(IRPIN, LOW);  // troubleshooting, can comment out
+  //  digitalWriteFast(IRPIN, LOW);  // troubleshooting, can comment out
   return (tempIR);
-  
+
 } // end of quickSampleIR function
 
 ///--------------------------------------------------------------
 
-void printTimeOLED(time_t theTime){
-//------------------------------------------------
-// printTimeOLED function takes a time_t object from
-// the real time clock and prints the date and time 
-// to the OLED object. 
+void printTimeOLED(time_t theTime) {
+  //------------------------------------------------
+  // printTimeOLED function takes a time_t object from
+  // the real time clock and prints the date and time
+  // to the OLED object.
   oled.print(year(theTime), DEC);
-    oled.print('-');
+  oled.print('-');
   if (month(theTime) < 10) {
     oled.print("0");
   }
-    oled.print(month(theTime), DEC);
-    oled.print('-');
-    if (day(theTime) < 10) {
+  oled.print(month(theTime), DEC);
+  oled.print('-');
+  if (day(theTime) < 10) {
     oled.print("0");
   }
   oled.print(day(theTime), DEC);
-    oled.print(' ');
-  if (hour(theTime) < 10){
+  oled.print(' ');
+  if (hour(theTime) < 10) {
     oled.print("0");
   }
-    oled.print(hour(theTime), DEC);
-    oled.print(':');
+  oled.print(hour(theTime), DEC);
+  oled.print(':');
   if (minute(theTime) < 10) {
     oled.print("0");
   }
-    oled.print(minute(theTime), DEC);
-    oled.print(':');
+  oled.print(minute(theTime), DEC);
+  oled.print(':');
   if (second(theTime) < 10) {
     oled.print("0");
   }
-    oled.print(second(theTime), DEC);
+  oled.print(second(theTime), DEC);
   // You may want to print a newline character
   // after calling this function i.e. Serial.println();
 }
@@ -869,27 +884,27 @@ void printTimeOLED(time_t theTime){
 // Saves a count of the number of good sensors (numgoodSensors)
 // Sets up each sensor using the user's parameters defined at the top of this program
 
-void scanSetupSensors (void){
+void scanSetupSensors (void) {
   numgoodSensors = 0; // reset to zero each time this function is called
   for (byte i = 0; i < MAX_SENSORS; i++) {
     tcaselect(i);
     delayMicroseconds(20);
     goodSensors[i] = 127; // Reset this value before scanning for the sensor
     if (particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
-      {
-        // If sensor is present, mark it in the goodSensors array
+    {
+      // If sensor is present, mark it in the goodSensors array
+      goodSensors[i] = i;
+      numgoodSensors++;
+    } else {
+      // If sensor didn't show up, wait a bit and try a 2nd time
+      delay(5);
+      if (particleSensor.begin(Wire, I2C_SPEED_FAST)) {
         goodSensors[i] = i;
         numgoodSensors++;
-      } else {
-        // If sensor didn't show up, wait a bit and try a 2nd time
-        delay(5);
-        if(particleSensor.begin(Wire, I2C_SPEED_FAST)){
-          goodSensors[i] = i;
-          numgoodSensors++;
-        }
       }
-      // If the sensor was marked good, set it up for our sampling needs
-    if (goodSensors[i] != 127){
+    }
+    // If the sensor was marked good, set it up for our sampling needs
+    if (goodSensors[i] != 127) {
       particleSensor.setup(IRledBrightness[i], sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
       particleSensor.enableDIETEMPRDY(); //enable temp ready interrupt. Required to log temp, but each read takes 29ms
       // Tweak individual settings
@@ -905,26 +920,26 @@ void scanSetupSensors (void){
 // and calculate the approximate battery voltage (before the
 // voltage regulator). Returns a floating point value for
 // voltage.
-float readBatteryVoltage (int BATT_MONITOR_EN, int BATT_MONITOR, double dividerRatio, double refVoltage,int resolutionADC){
-    // Turn on the battery voltage monitor circuit
-    digitalWrite(BATT_MONITOR_EN, HIGH);
-    delay(1);
-    // Read the analog input pin
-    unsigned int rawAnalog = 0;
-    analogRead(BATT_MONITOR); // This initial value is ignored
-    delay(3); // Give the ADC time to stablize
-    // Take 4 readings
-    for (byte i = 0; i<4; i++){
-        rawAnalog = rawAnalog + analogRead(BATT_MONITOR);
-        delay(2);
-    }
-    // Do a 2-bit right shift to divide rawAnalog
-    // by 4 to get the average of the 4 readings
-    rawAnalog = rawAnalog >> 2;
-    // Shut off the battery voltage sense circuit
-    digitalWrite(BATT_MONITOR_EN, LOW);
-    // Convert the rawAnalog count value (0-4096) into a voltage
-    // Relies on global variables dividerRatio and refVoltage
-    double reading = rawAnalog * dividerRatio * refVoltage / (double)resolutionADC;
-    return reading; // return voltage result
+float readBatteryVoltage (int BATT_MONITOR_EN, int BATT_MONITOR, double dividerRatio, double refVoltage, int resolutionADC) {
+  // Turn on the battery voltage monitor circuit
+  digitalWrite(BATT_MONITOR_EN, HIGH);
+  delay(1);
+  // Read the analog input pin
+  unsigned int rawAnalog = 0;
+  analogRead(BATT_MONITOR); // This initial value is ignored
+  delay(3); // Give the ADC time to stablize
+  // Take 4 readings
+  for (byte i = 0; i < 4; i++) {
+    rawAnalog = rawAnalog + analogRead(BATT_MONITOR);
+    delay(2);
+  }
+  // Do a 2-bit right shift to divide rawAnalog
+  // by 4 to get the average of the 4 readings
+  rawAnalog = rawAnalog >> 2;
+  // Shut off the battery voltage sense circuit
+  digitalWrite(BATT_MONITOR_EN, LOW);
+  // Convert the rawAnalog count value (0-4096) into a voltage
+  // Relies on global variables dividerRatio and refVoltage
+  double reading = rawAnalog * dividerRatio * refVoltage / (double)resolutionADC;
+  return reading; // return voltage result
 }
