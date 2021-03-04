@@ -890,7 +890,7 @@ void scanSetupSensors (void) {
     tcaselect(i);
     delayMicroseconds(20);
     goodSensors[i] = 127; // Reset this value before scanning for the sensor
-    if (particleSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
+    if (particleSensor.begin(Wire, I2C_SPEED_STANDARD)) //Use default I2C port, 100kHz speed
     {
       // If sensor is present, mark it in the goodSensors array
       goodSensors[i] = i;
@@ -898,7 +898,7 @@ void scanSetupSensors (void) {
     } else {
       // If sensor didn't show up, wait a bit and try a 2nd time
       delay(5);
-      if (particleSensor.begin(Wire, I2C_SPEED_FAST)) {
+      if (particleSensor.begin(Wire, I2C_SPEED_STANDARD)) {
         goodSensors[i] = i;
         numgoodSensors++;
       }
