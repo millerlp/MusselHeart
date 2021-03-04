@@ -101,22 +101,24 @@ void digitalClockDisplay(time_t theTime) {
   // digital clock display of the time
   Serial.print(year(theTime));
   Serial.print(F("-")); 
-  Serial.print(month(theTime));   
+  printDigits(month(theTime));
+//  Serial.print(month(theTime));   
   Serial.print(F("-"));
-  Serial.print(day(theTime));
+  printDigits(day(theTime));
+//  Serial.print(day(theTime));
   Serial.print(" ");
-  Serial.print(hour(theTime));
-  printDigits(minute(theTime));
+  Serial.print(hour(theTime)); Serial.print(":");
+  printDigits(minute(theTime)); Serial.print(":");
   printDigits(second(theTime)); 
   Serial.println(); 
 }
 
 
 void printDigits(int digits){
-  // utility function for digital clock display: prints preceding colon and leading 0
-  Serial.print(":");
-  if(digits < 10)
+  // utility function for digital clock display: prints leading 0
+  if(digits < 10) {
     Serial.print('0');
+  }
   Serial.print(digits);
 }
 
