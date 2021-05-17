@@ -235,7 +235,7 @@ void setup() {
   oled.print("Battery: ");
   oled.print(batteryVolts, 3);
   oled.println("V");
-  delay(2000);
+  delay(4000);
   //*********************************
   // Idle while waiting for a new minute to start
   myTime = Teensy3Clock.get(); // Read current time from the Teensy rtc
