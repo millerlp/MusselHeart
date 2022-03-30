@@ -17,9 +17,11 @@
 */
 #include <EEPROM.h>
 
-// serial number to write to chip. Always increment this value and save this file
+// Enter your desired brightness values in the array here. They may all be the
+// same or can be unique for each sensor channel
 byte IRledBrightness[] = {10, 20, 30, 40, 50, 60, 70, 80};
-char serialnumber[]="SN01";
+
+char serialnumber[]="SN01"; // dummy value, don't worry about changing this
 
 void setup(){
   Serial.begin(57600);
