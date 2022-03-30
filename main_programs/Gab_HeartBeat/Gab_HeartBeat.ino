@@ -27,8 +27,7 @@
 #include "SSD1306AsciiWire.h" // https://github.com/greiman/SSD1306Ascii
 #include "TimeLib.h"          // https://github.com/PaulStoffregen/Time
 #include <Wire.h>
-//#include "FS.h"
-#include "SdFat.h"            // https://github.com/greiman/SdFat
+#include "SdFat.h"            // https://github.com/greiman/SdFat (compiles with 2.1.2)
 #include "EEPROM.h"
 
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
@@ -74,15 +73,11 @@ bool temp0Flag = false; // Used to mark a temperature readout at 0 seconds
 bool temp30Flag = false; // Used to mark a temperature readout at 30 seconds
 
 //SD components
-const uint8_t SD_CS_PIN = SDCARD_SS_PIN; // LPM attempt 2022-03-30
-#define SD_FAT_TYPE 3; // LPM attempt 2022-03-30
-//#define SDFAT_FILE_TYPE = 3; // LPM attempt 2022-03-30
-//SdFatSdio SD; // Uses Teensy's built-in SD card slot // original
-SdFs SD; // LPM attempt 2022-03-30
-//File myFile; //SD card object 1 (IR data)
-//File myFile2; //SD card object 2 (Temp data)
-FsFile myFile; //SD card object 1 (IR data) // LPM attempt 2022-03-30
-FsFile myFile2; //SD card object 2 (Temp data) // LPM attemp 2022-03-30
+const uint8_t SD_CS_PIN = SDCARD_SS_PIN; // Set up to use Teensy 3.5 onboard SD card slot
+#define SD_FAT_TYPE 3; // For use with SdFat-beta 2.1.4-beta3 and SdFat 2.1.2
+SdFs SD; 
+FsFile myFile; //SD card object 1 (IR data) 
+FsFile myFile2; //SD card object 2 (Temp data) 
 //const int chipSelect = BUILTIN_SDCARD;  // not used with SdFat library
 
 
