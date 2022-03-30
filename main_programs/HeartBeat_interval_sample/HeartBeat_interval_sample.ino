@@ -17,7 +17,7 @@
 #include "SSD1306Ascii.h"     // https://github.com/greiman/SSD1306Ascii
 #include "SSD1306AsciiWire.h" // https://github.com/greiman/SSD1306Ascii
 #include <Wire.h>
-#include "SdFat.h"            // https://github.com/greiman/SdFat
+#include "SdFat.h"            // https://github.com/greiman/SdFat (compiles with SdFat 2.1.2)
 #include "EEPROM.h"
 
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
@@ -75,9 +75,14 @@ SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 por
 
 //----------------------------------------------
 //SD components
-SdFatSdio SD; // Uses Teensy's built-in SD card slot
-File IRFile; //SD card object 1 (IR data)
-File TEMPFile; //SD card object 2 (Temp data)
+const uint8_t SD_CS_PIN = SDCARD_SS_PIN; // Set up to use Teensy 3.5 onboard SD card slot
+#define SD_FAT_TYPE 3; // For use with SdFat-beta 2.1.4-beta3 or SdFat 2.1.2
+SdFs SD; 
+FsFile IRFile; //SD card object 1 (IR data) 
+FsFile TEMPFile; //SD card object 2 (Temp data) 
+//SdFatSdio SD; // Uses Teensy's built-in SD card slot
+//File IRFile; //SD card object 1 (IR data)
+//File TEMPFile; //SD card object 2 (Temp data)
 // Declare initial name for output files written to SD card
 char filename[] = "YYYYMMDD_HHMM_00_SN00_IR.csv";
 char filename2[] = "YYYYMMDD_HHMM_00_SN00_TEMP.csv";
@@ -510,7 +515,7 @@ void setColor(int red, int green, int blue)
 
 //*********************************************
 // Function to create a fileName based on the current time
-void initFileName(SdFatSdio& SD, File& IRFile, time_t time1, char *filename, bool serialValid, char *serialNumber) {
+void initFileName(SdFs& SD, FsFile& IRFile, time_t time1, char *filename, bool serialValid, char *serialNumber) {
 
   char buf[5];
   // integer to ascii function itoa(), supplied with numeric year value,
@@ -617,7 +622,7 @@ void initFileName(SdFatSdio& SD, File& IRFile, time_t time1, char *filename, boo
 } // end of initFileName function
 //*********************************************
 // Function to create a fileName for Temp file based on the current time
-void initTempFileName(SdFatSdio& SD, File& TEMPFile, time_t time1, char *filename2, bool serialValid, char *serialNumber, char *temp) {
+void initTempFileName(SdFs& SD, FsFile& TEMPFile, time_t time1, char *filename2, bool serialValid, char *serialNumber, char *temp) {
 
   char buf[5];
   // integer to ascii function itoa(), supplied with numeric year value,
