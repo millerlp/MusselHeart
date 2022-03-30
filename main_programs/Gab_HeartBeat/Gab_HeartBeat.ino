@@ -27,6 +27,7 @@
 #include "SSD1306AsciiWire.h" // https://github.com/greiman/SSD1306Ascii
 #include "TimeLib.h"          // https://github.com/PaulStoffregen/Time
 #include <Wire.h>
+//#include "FS.h"
 #include "SdFat.h"            // https://github.com/greiman/SdFat
 #include "EEPROM.h"
 
@@ -73,10 +74,17 @@ bool temp0Flag = false; // Used to mark a temperature readout at 0 seconds
 bool temp30Flag = false; // Used to mark a temperature readout at 30 seconds
 
 //SD components
-SdFatSdio SD; // Uses Teensy's built-in SD card slot
-File myFile; //SD card object 1 (IR data)
-File myFile2; //SD card object 2 (Temp data)
+const uint8_t SD_CS_PIN = SDCARD_SS_PIN; // LPM attempt 2022-03-30
+#define SD_FAT_TYPE 3; // LPM attempt 2022-03-30
+//#define SDFAT_FILE_TYPE = 3; // LPM attempt 2022-03-30
+//SdFatSdio SD; // Uses Teensy's built-in SD card slot // original
+SdFs SD; // LPM attempt 2022-03-30
+//File myFile; //SD card object 1 (IR data)
+//File myFile2; //SD card object 2 (Temp data)
+FsFile myFile; //SD card object 1 (IR data) // LPM attempt 2022-03-30
+FsFile myFile2; //SD card object 2 (Temp data) // LPM attemp 2022-03-30
 //const int chipSelect = BUILTIN_SDCARD;  // not used with SdFat library
+
 
 // Declare initial name for output files written to SD card
 char filename[] = "YYYYMMDD_HHMM_00_SN00_IR.csv";
@@ -224,7 +232,7 @@ void setup() {
 #endif  
 
   if (!SD.begin()) {
-    SD.initErrorHalt("SdFatSdio begin() failed");
+    SD.initErrorHalt("SdFat begin() failed");
     oled.println("No SD card found");
   }
   
@@ -506,7 +514,7 @@ void setColor(int red, int green, int blue)
 
 //*********************************************
 // Function to create a fileName based on the current time
-void initFileName(SdFatSdio& SD, File& myFile, time_t time1, char *filename, bool serialValid, char *serialNumber) {
+void initFileName(SdFat& SD, FsFile& myFile, time_t time1, char *filename, bool serialValid, char *serialNumber) {
 
   char buf[5];
   // integer to ascii function itoa(), supplied with numeric year value,
@@ -613,7 +621,7 @@ void initFileName(SdFatSdio& SD, File& myFile, time_t time1, char *filename, boo
 } // end of initFileName function
 //*********************************************
 // Function to create a fileName for Temp file based on the current time
-void initTempFileName(SdFatSdio& SD, File& myFile2, time_t time1, char *filename2, bool serialValid, char *serialNumber, char *temp) {
+void initTempFileName(SdFat& SD, FsFile& myFile2, time_t time1, char *filename2, bool serialValid, char *serialNumber, char *temp) {
 
   char buf[5];
   // integer to ascii function itoa(), supplied with numeric year value,
