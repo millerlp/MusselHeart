@@ -6,7 +6,7 @@
 */
 
 #include <Wire.h>
-#include "MAX30100.h" // https://github.com/oxullo/Arduino-MAX30100
+#include "MAX30100.h" // https://github.com/millerlp/Arduino-MAX30100
 //#include "heartRate.h" // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
 #include "SSD1306Ascii.h" // https://github.com/greiman/SSD1306Ascii
 #include "SSD1306AsciiWire.h" // https://github.com/greiman/SSD1306Ascii
@@ -16,12 +16,12 @@
 MAX30100 heartSensor; // create MAX30100 object called heartSensor
 
 // Particle sensor settings
-byte ledBrightness = 0x1F; //Options: 0=Off to 255=50mA (full on)
+//byte ledBrightness = 0x1F; //Options: 0=Off to 255=50mA (full on)
 byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32. We use immediate read, so no point to averaging
-byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. We use Red+IR for heart stuff
+//byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. We use Red+IR for heart stuff
 byte sampleRate = 200; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 int pulseWidth = 215; //Options: 69, 118, 215, 411. Higher values = more sensitivity
-int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
+//int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
 
 #define MULTIPLE_I2C_PORTS 1  // for ssd1306Ascii library, tell it there are multiple I2C ports available
 
@@ -55,7 +55,8 @@ void setup() {
   oled.println();
   delay(1000);
   
-  for (byte i = 0; i < 8; i++){
+  for (byte i = 0; i < 1; i++){
+//  for (byte i = 0; i < 8; i++){
       // Set the TCA I2C multiplexer to channel 0
     tcaselect(i);
     delayMicroseconds(20);
@@ -81,7 +82,7 @@ void setup() {
     heartSensor.setLedsPulseWidth(MAX30100_SPC_PW_1600US_16BITS);
     heartSensor.setSamplingRate(MAX30100_SAMPRATE_50HZ); // Slowest rate is 50Hz
     heartSensor.setLedsCurrent(MAX30100_LED_CURR_50MA, MAX30100_LED_CURR_0MA ); // (IR current, Red LED current)
-    heartSensor.setHighresModeEnabled(true);
+    heartSensor.setHighresModeEnabled(false);
     
     // Tweak individual settings
 //    particleSensor.setPulseAmplitudeRed(0x01); // essentially turn off red LED to save power, we only want IR LED.
@@ -126,14 +127,17 @@ void loop() {
   unsigned long currentMillis = millis(); // update currentMillis
   if ( (currentMillis - myMillis) >= myIntervalMS) {
       myMillis = currentMillis; // update myMillis
-    for (byte i = 0; i < 8; i++){
+    for (byte i = 0; i < 1; i++){ // for testing only channel 0
+//    for (byte i = 0; i < 8; i++){
       if (goodSensors[i] != 127) {
         tcaselect(i);
   //      uint32_t sensorVal = particleSensor.getIR();
-        uint32_t sensorVal = quickSampleIR();
+//        uint32_t sensorVal = quickSampleIR();  // 32-bit number for MAX30105, MAX30101
+        uint16_t sensorVal = quickSampleIR(); // 16-bit number for MAX30100
+        Serial.print(millis()); Serial.print("\t");
         Serial.print(sensorVal); //Send raw data to plotter
         Serial.print("\t");
-        printSensorOLED(i, sensorVal); // Use function below to print sensor values to OLED screen
+//        printSensorOLED(i, sensorVal); // Use function below to print sensor values to OLED screen
       } 
     }
     Serial.println();
@@ -208,7 +212,7 @@ void printSensorOLED(uint8_t i, uint32_t sensorValue){
 }
 
 //-----------------------------------------------
-// Custom sampling function for the MAX30105, calling functions in the MAX30105.h library
+// Custom sampling function for the MAX30100, calling functions in the MAX30100.h library
 uint16_t quickSampleIR(void) {
   uint16_t ir, red;
   // Clear the MAX30100 FIFO buffer so that there will only be one new sample to read
@@ -219,5 +223,5 @@ uint16_t quickSampleIR(void) {
   delayMicroseconds( (pulseWidth * 2 * sampleAverage) + 50) ;
   heartSensor.update(); // get a new reading
   heartSensor.getRawValues(&ir, &red);  // extract the most recent reading
-  return(ir);
+  return(ir); // only return the IR channel value
 } // end of quickSampleIR function
