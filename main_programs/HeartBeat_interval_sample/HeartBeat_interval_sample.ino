@@ -23,7 +23,9 @@
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
 #define FAST_SAMPLE_INTERVAL_MS 100 // units millisecond - this sets sampling rate when active
 #define SAMPLE_INTERVAL_SEC 60 // units seconds - this sets how long between sampling bouts
+#define SAMPLING_LENGTH_SEC 45 // units seconds - how many seconds worth of samples will be collected in a minute
 bool readTempsFlag = false;
+
 
 //------------------------------------------
 // Debugging stuff, used with logic analyzer
@@ -77,10 +79,10 @@ SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 por
 //SD components
 const uint8_t SD_CS_PIN = SDCARD_SS_PIN; // Set up to use Teensy 3.5 onboard SD card slot
 #define SD_FAT_TYPE 3; // For use with SdFat-beta 2.1.4-beta3 or SdFat 2.1.2
-SdFs SD; 
+SdFs sd; 
 FsFile IRFile; //SD card object 1 (IR data) 
 FsFile TEMPFile; //SD card object 2 (Temp data) 
-//SdFatSdio SD; // Uses Teensy's built-in SD card slot
+//SdFatSdio sd; // Uses Teensy's built-in SD card slot
 //File IRFile; //SD card object 1 (IR data)
 //File TEMPFile; //SD card object 2 (Temp data)
 // Declare initial name for output files written to SD card
@@ -220,18 +222,18 @@ void setup() {
   digitalClockDisplay(myTime); // digital clock display of the time to Serial
   //SD setup
   Serial.print("Initializing SD card...");
-  if (!SD.begin()) {
+  if (!sd.begin(SdioConfig(FIFO_SDIO))) {
     oled.println("No SD card found");
-    SD.initErrorHalt("SdFatSdio begin() failed");
+    sd.initErrorHalt("SdFatSdio begin() failed");
     setColor(255, 0, 0);
   }
   Serial.println("Initialization done.");
   // SD Naming IR file
-  initFileName(SD, IRFile, myTime, filename, serialValid, serialNumber);
+  initFileName(sd, IRFile, myTime, filename, serialValid, serialNumber);
   Serial.print("Using IR file ");
   Serial.println(filename);
   // SD Naming Temperature file
-  initTempFileName(SD, TEMPFile, myTime, filename2, serialValid, serialNumber, temp);
+  initTempFileName(sd, TEMPFile, myTime, filename2, serialValid, serialNumber, temp);
   Serial.print("Using Temp file ");
   Serial.println(filename2);
   //*****************************
@@ -267,10 +269,10 @@ void setup() {
 void loop() {
   /* TODOs:
       1. Check current time from RTC. If new day, open new files
-      2. If seconds 0-30 of the minute, run the IntervalTimer to
+      2. If seconds 0-SAMPLING_LENGTH_SEC of the minute, run the IntervalTimer to
       generate 10Hz interrupts that will trigger a round of heart
       rate sampling
-      3. If seconds 30 is reached, take a set of temperature readings
+      3. If seconds SAMPLING_LENGTH_SEC is reached, take a set of temperature readings
       to write to the 2nd file, along with battery voltage
       4. Shut down heart sensors and Teensy3.5, using rtcAlarm() function
       from Snooze library to trigger a wake up at the start of the next
@@ -291,14 +293,14 @@ void loop() {
     // Close the current IR file
     IRFile.close();
     // Start a new IR file
-    initFileName(SD, IRFile, myTime, filename, serialValid, serialNumber);
+    initFileName(sd, IRFile, myTime, filename, serialValid, serialNumber);
     // Close the current temperature file
     TEMPFile.close();
     // Start a new temperature file
-    initTempFileName(SD, TEMPFile, myTime, filename2, serialValid, serialNumber, temp);
+    initTempFileName(sd, TEMPFile, myTime, filename2, serialValid, serialNumber, temp);
   }
 
-  while ( second(myTime) < 30 ) {
+  while ( second(myTime) < SAMPLING_LENGTH_SEC ) {
     elapsedMillis sampleTimer = 0;
     // Start each time through this loop by reawakening IR sensors
     // Reopen IR logfile. If opening fails, notify the user
@@ -370,7 +372,7 @@ void loop() {
   // take one round of temperature values if the readTempsFlag
   // is currently true. It will be set to false after reading
   // one set of temperature values at the 30 second mark
-  if ( (second(myTime) == 30) & (readTempsFlag == true) ) {
+  if ( (second(myTime) == SAMPLING_LENGTH_SEC) & (readTempsFlag == true) ) {
     IRFile.close(); // close this file for now
     readTempsFlag = false;  // Set false so that this only runs once per minute
     for (byte i = 0; i < MAX_SENSORS; i++) {
@@ -423,7 +425,7 @@ void loop() {
     else {
       Serial.println("error opening temperature file.");
     }
-    // Flash to let user know we just finished the 30 seconds of IR sampling 
+    // Flash to let user know we just finished the SAMPLING_LENGTH_SEC seconds of IR sampling 
     // and the temperature readings, and will be going to sleep next
     for (int i = 0; i < 4; i++) {
       setColor(0, 255, 0);
@@ -431,7 +433,7 @@ void loop() {
       setColor(0, 0, 0);
       delay(5);
     }
-  } // end of if (myTime == 30 & readTempsFlag == true) section
+  } // end of if (myTime == SAMPLING_LENGTH_SEC & readTempsFlag == true) section
 
   //*****************************************************
   // After the temperature samples have been taken, spend the
@@ -515,7 +517,7 @@ void setColor(int red, int green, int blue)
 
 //*********************************************
 // Function to create a fileName based on the current time
-void initFileName(SdFs& SD, FsFile& IRFile, time_t time1, char *filename, bool serialValid, char *serialNumber) {
+void initFileName(SdFs& sd, FsFile& IRFile, time_t time1, char *filename, bool serialValid, char *serialNumber) {
 
   char buf[5];
   // integer to ascii function itoa(), supplied with numeric year value,
@@ -586,10 +588,10 @@ void initFileName(SdFs& SD, FsFile& IRFile, time_t time1, char *filename, bool s
     filename[14] = i / 10 + '0';
     filename[15] = i % 10 + '0';
 
-    if (!SD.exists(filename)) {
-      // when SD.exists() returns false, this block
+    if (!sd.exists(filename)) {
+      // when sd.exists() returns false, this block
       // of code will be executed to open a file with this new filename
-      IRFile = SD.open(filename, O_RDWR | O_CREAT | O_AT_END);
+      IRFile = sd.open(filename, O_RDWR | O_CREAT | O_AT_END);
       //      if (!IRFile.open(filename, O_RDWR | O_CREAT | O_AT_END)) {
       //        Serial.println("Didn't open IRFile initially");
       //        delay(5);
@@ -622,7 +624,7 @@ void initFileName(SdFs& SD, FsFile& IRFile, time_t time1, char *filename, bool s
 } // end of initFileName function
 //*********************************************
 // Function to create a fileName for Temp file based on the current time
-void initTempFileName(SdFs& SD, FsFile& TEMPFile, time_t time1, char *filename2, bool serialValid, char *serialNumber, char *temp) {
+void initTempFileName(SdFs& sd, FsFile& TEMPFile, time_t time1, char *filename2, bool serialValid, char *serialNumber, char *temp) {
 
   char buf[5];
   // integer to ascii function itoa(), supplied with numeric year value,
@@ -694,10 +696,10 @@ void initTempFileName(SdFs& SD, FsFile& TEMPFile, time_t time1, char *filename2,
     filename2[14] = i / 10 + '0';
     filename2[15] = i % 10 + '0';
 
-    if (!SD.exists(filename2)) {
-      // when SD.exists() returns false, this block
+    if (!sd.exists(filename2)) {
+      // when sd.exists() returns false, this block
       // of code will be executed to open a file with this new filename
-      TEMPFile = SD.open(filename2, O_RDWR | O_CREAT | O_AT_END);
+      TEMPFile = sd.open(filename2, O_RDWR | O_CREAT | O_AT_END);
       //      if (!IRFile.open(filename, O_RDWR | O_CREAT | O_AT_END)) {
       //        Serial.println("Didn't open IRFile initially");
       //        delay(5);
