@@ -36,7 +36,8 @@
 
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
 #define FAST_SAMPLE_INTERVAL_MS 100 // units millisecond - this sets sampling rate when active
-#define SAMPLE_INTERVAL_SEC 120 // units seconds - this sets how long between sampling bouts
+#define INTERVAL_MINUTES 5 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
+//#define SAMPLE_INTERVAL_SEC 120 // units seconds - this sets how long between sampling bouts
 #define SAMPLING_LENGTH_SEC 60 // units seconds - how many seconds worth of samples will be collected in a minute
 bool readTempsFlag = false;
 
@@ -69,7 +70,6 @@ int pulseWidth = 411; //Options: 69, 118, 215, 411, units microseconds. Applies 
 int sampleRate = 200; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 int adcRange = 8192; //Options: 2048, 4096, 8192, 16384. 4096 is standard
 
-uint16_t wakeDelay = 1000; // Units microseconds - time to wait while sensor returns from power-save mode
 
 #define TCAADDR 0x70 // I2C address for the I2C multiplexer chip
 //-------------------------------
@@ -263,9 +263,11 @@ void setup() {
   oled.println("V");
   //**********************************
   // Report settings
-  Serial.print("Sampling interval: "); Serial.print(SAMPLE_INTERVAL_SEC); Serial.println(" secs");
+//  Serial.print("Sampling interval: "); Serial.print(SAMPLE_INTERVAL_SEC); Serial.println(" secs");
+  Serial.print("Sampling interval: "); Serial.print(INTERVAL_MINUTES); Serial.println(" minutes");
   Serial.print("Sampling duration: "); Serial.print(SAMPLING_LENGTH_SEC); Serial.println(" secs");
-  oled.print("Interval: "); oled.print(SAMPLE_INTERVAL_SEC); oled.println(" secs");
+//  oled.print("Interval: "); oled.print(SAMPLE_INTERVAL_SEC); oled.println(" secs");
+  oled.print("Interval: "); oled.print(INTERVAL_MINUTES); oled.println(" mins");
   oled.print("Duration: "); oled.print(SAMPLING_LENGTH_SEC); oled.println(" secs");
 
   
@@ -273,7 +275,17 @@ void setup() {
   //*********************************
   // Idle while waiting for a new minute to start
   myTime = Teensy3Clock.get(); // Read current time from the Teensy rtc
-  while (second(myTime) != 0) {
+//  while (second(myTime) != 0) {
+//    alarm.setAlarm(myTime + 1); // set alarm 1 second in future
+//    Snooze.deepSleep( config_teensy35); // sleep until second rolls over
+//    oled.clear();
+//    printTimeOLED(Teensy3Clock.get());
+//    oled.println();
+//    oled.print("Waiting...");
+//    myTime = Teensy3Clock.get(); // update myTime
+//  }
+
+  while (1) {
     alarm.setAlarm(myTime + 1); // set alarm 1 second in future
     Snooze.deepSleep( config_teensy35); // sleep until second rolls over
     oled.clear();
@@ -281,15 +293,21 @@ void setup() {
     oled.println();
     oled.print("Waiting...");
     myTime = Teensy3Clock.get(); // update myTime
+
+    if ( (minute(myTime) % INTERVAL_MINUTES) == 0){
+      break; // break out of while loop
+    }
   }
+
+  
   // If we exited the while loop above, a new minute has just
   // started
   oled.clear();
   // Manual shut down of SSD1306 oled display driver
-//  Wire1.beginTransmission(0x3C); // oled1 display address
-//  Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
-//  Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
-//  Wire1.endTransmission(); // stop transmitting
+  Wire1.beginTransmission(0x3C); // oled1 display address
+  Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
+  Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
+  Wire1.endTransmission(); // stop transmitting
 
 } // end of setup()
 
@@ -495,7 +513,8 @@ void loop() {
   // to it to create an alarm (1 minute) in the future from currTime
   // which should cause the device to reawaken exactly when the real
   // time clock rolls over at the start of the next minute HH:MM:00
-  alarm.setAlarm( currTime + SAMPLE_INTERVAL_SEC );
+//  alarm.setAlarm( currTime + SAMPLE_INTERVAL_SEC );
+  alarm.setAlarm( currTime + (INTERVAL_MINUTES * 60) );
   // Hibernate using the config_teensy35_2 configuration which only
   // listens for the RTC Alarm (ignores the faster timer wakeup)
   who = Snooze.hibernate( config_teensy35_2 );
