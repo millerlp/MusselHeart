@@ -25,7 +25,7 @@
 
 */
 
-#include "MAX30105.h"         // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
+#include "MAX30105.h"         // https://github.com/millerlp/SparkFun_MAX3010x_Sensor_Library
 #include "Snooze.h"   // https://github.com/duff2013/Snooze
 #include <TimeLib.h>  // https://github.com/PaulStoffregen/Time
 #include "SSD1306Ascii.h"     // https://github.com/greiman/SSD1306Ascii
