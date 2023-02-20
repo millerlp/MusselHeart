@@ -36,7 +36,7 @@
 
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
 #define FAST_SAMPLE_INTERVAL_MS 100 // units millisecond - this sets sampling rate when active
-#define INTERVAL_MINUTES 5 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
+#define INTERVAL_MINUTES 2 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
 //#define SAMPLE_INTERVAL_SEC 120 // units seconds - this sets how long between sampling bouts
 #define SAMPLING_LENGTH_SEC 60 // units seconds - how many seconds worth of samples will be collected in a minute
 bool readTempsFlag = false;
