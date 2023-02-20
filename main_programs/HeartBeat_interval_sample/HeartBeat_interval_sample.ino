@@ -4,20 +4,17 @@
     Teensy3.5 and heart rate daughterboard RevB.
 
     Updated 2023-02-18 to fix the missed-sample issue and lengthen
-    sampling period to 60 seconds from 30 seconds. 
+    sampling period to 60 seconds from 30 seconds.   
+    This version still has an issue with values from one channel
+    bleeding over into the neighboring channel occasionally. This
+    may be due to the multiplexer not changing channels successfully
+    sometimes. 
 
     This version will sample the heart rate sensors at 10Hz
     for 60 seconds, then take a round of temperature readings,
-    and put everything to sleep for the remainder of the minute
+    and put everything to sleep for the remainder of the sample interval
     using the Snooze library, in an attempt to lower the overall
     power usage.
-
-    /* NOTE: there was an issue with the sensors occasionally dropping
-     *  a sample (reporting zero). I have corrected this by clearing
-     *  the FIFO buffer and then waiting for a new sample to appear before
-     *  attempting to read. This results in a slower read time that 
-     *  limits you to only reading 1 sample instead of averaging 4
-     *  in order to stay under the 100ms limit for 10Hz sample intervals
   
     NOTE: If this program is running on the Teensy, the serial
     connection will drop out every time a new set of samples starts,
@@ -29,7 +26,7 @@
 */
 
 #include "MAX30105.h"         // https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
-#include <Snooze.h>   // https://github.com/duff2013/Snooze
+#include "Snooze.h"   // https://github.com/duff2013/Snooze
 #include <TimeLib.h>  // https://github.com/PaulStoffregen/Time
 #include "SSD1306Ascii.h"     // https://github.com/greiman/SSD1306Ascii
 #include "SSD1306AsciiWire.h" // https://github.com/greiman/SSD1306Ascii
@@ -39,8 +36,8 @@
 
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
 #define FAST_SAMPLE_INTERVAL_MS 100 // units millisecond - this sets sampling rate when active
-#define INTERVAL_MINUTES 5 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
-#define SAMPLING_LENGTH_SEC 60 // units seconds - how many seconds worth of samples will be collected in a minute
+#define INTERVAL_MINUTES 1 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
+#define SAMPLING_LENGTH_SEC 55 // units seconds - how many seconds worth of samples will be collected in a minute
 bool readTempsFlag = false;
 
 
@@ -57,7 +54,7 @@ byte goodSensors[] = {127, 127, 127, 127, 127, 127, 127, 127};
 byte numgoodSensors = 0;
 // sensor configurations
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. Only use 2
-byte REDledBrightness = 1; // low value of 0 shuts it off, 1 is barely on
+byte REDledBrightness = 0; // low value of 0 shuts it off, 1 is barely on
 //byte IRledBrightness = 20; //Options: 0=off to 255=fully on, try 10-30 initially. Too high will make noisy signal
 // Define IR led brightness setting for each of the 8 channels
 // Options: 0=off to 255=fully on, try 10-30 initially. Too high will make noisy signal
@@ -65,11 +62,9 @@ byte REDledBrightness = 1; // low value of 0 shuts it off, 1 is barely on
 byte IRledBrightness[] = {60, 60, 60, 60, 60, 60, 60, 60};
 
 byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32, but only use 1. The others are too slow
-
-
 int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
 // For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
-int sampleRate = 400; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
+int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 int adcRange = 4096; //Options: 2048, 4096, 8192, 16384. 4096 is standard
 
 
@@ -296,7 +291,7 @@ void setup() {
     oled.print("Waiting...");
     myTime = Teensy3Clock.get(); // update myTime
 
-    if ( (minute(myTime) % INTERVAL_MINUTES) == 0 & (second(myTime) == 0) ){
+    if ( ((minute(myTime) % INTERVAL_MINUTES) == 0) & (second(myTime) == 0) ){
       break; // break out of while loop
     }
   }
@@ -306,10 +301,10 @@ void setup() {
   // started
   oled.clear();
   // Manual shut down of SSD1306 oled display driver
-  Wire1.beginTransmission(0x3C); // oled1 display address
-  Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
-  Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
-  Wire1.endTransmission(); // stop transmitting
+//  Wire1.beginTransmission(0x3C); // oled1 display address
+//  Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
+//  Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
+//  Wire1.endTransmission(); // stop transmitting
 
 } // end of setup()
 
@@ -330,8 +325,8 @@ void loop() {
       minute
   */
   myTime = Teensy3Clock.get();
-  digitalWriteFast(scopePin0, HIGH); // debugging, can comment out
-  scopePinState = HIGH; // debugging, can comment out
+//  digitalWriteFast(scopePin0, HIGH); // debugging, can comment out
+//  scopePinState = HIGH; // debugging, can comment out
 
   time_t currTime = myTime; // Copy for later
   // If a new day has started, create a new output file
@@ -361,27 +356,34 @@ void loop() {
   time_t startTimeStamp [SAMPLING_LENGTH_SEC * (FAST_SAMPLE_INTERVAL_MS / 10)] = {}; 
   
   uint16_t loopCount = 0;  // Used for counting the SAMPLING_LENGTH_SEC * 10 Hz number of sampling loops
+
+  
+  for (byte channel = 0; channel < MAX_SENSORS; channel++) {
+    if (goodSensors[channel] != 127) {
+      tcaselect(channel);
+      delayMicroseconds(5);
+      max3010x.wakeUp();
+      delayMicroseconds(5);
+    }
+  }
+  
     
   while ( loopCount < (SAMPLING_LENGTH_SEC * (FAST_SAMPLE_INTERVAL_MS / 10)) ) {
     elapsedMillis sampleTimer = 0;
     startTimeStamp[loopCount] = myTime;
     // Start each time through this loop by reawakening IR sensors
       
-      millisStartBuffer[loopCount] = millis(); // Store the current millis value at start of a sample cycle
+    millisStartBuffer[loopCount] = millis(); // Store the current millis value at start of a sample cycle
       
-      for (byte channel = 0; channel < MAX_SENSORS; channel++) {
-        if (goodSensors[channel] != 127) {
+    for (byte channel = 0; channel < MAX_SENSORS; channel++) {
+      if (goodSensors[channel] != 127) {
           tcaselect(channel);
-          max3010x.wakeUp(); // Wake up sensor to take sample
-          max3010x.clearFIFO();
-          while(max3010x.check() < 1){} // Idle here until a value is ready
-         
-          sampleBuffer[loopCount][channel] = quickSampleIR();
+          while(max3010x.check() < 0) {}; // wait for a new sample to appear    
+          // Calling getIR() should get the most recent value from the buffer of values
+          sampleBuffer[loopCount][channel] = max3010x.getIR();  // modify getIR in the library to remove safeCheck() function    
 //          printSensorOLED(channel, sampleBuffer[loopCount][channel]); // testing only
-
-          max3010x.shutDown(); // shut down sensor once sample is taken to save power
-        }
-      } // End of looping through the 8 channels
+      }
+    } // End of looping through the 8 channels
 
 
     millisEndBuffer[loopCount] = millis(); // Store the millis value at the end of a single sample cycle
@@ -918,6 +920,7 @@ uint32_t quickSampleIR(void) {
   // If sampleAverage is >1, the sensor should be internally averaging the
   // readings, and this getIR() function will return the most recent averaged value
   uint32_t tempIR = max3010x.getIR();
+//  uint32_t tempIR = max3010x.getFIFOIR();
   //  digitalWriteFast(IRPIN, LOW);  // troubleshooting, can comment out
   return (tempIR);
 
