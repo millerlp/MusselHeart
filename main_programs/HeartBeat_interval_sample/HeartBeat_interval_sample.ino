@@ -39,7 +39,7 @@
 
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
 #define FAST_SAMPLE_INTERVAL_MS 100 // units millisecond - this sets sampling rate when active
-#define INTERVAL_MINUTES 2 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
+#define INTERVAL_MINUTES 5 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
 #define SAMPLING_LENGTH_SEC 60 // units seconds - how many seconds worth of samples will be collected in a minute
 bool readTempsFlag = false;
 
@@ -62,15 +62,15 @@ byte REDledBrightness = 1; // low value of 0 shuts it off, 1 is barely on
 // Define IR led brightness setting for each of the 8 channels
 // Options: 0=off to 255=fully on, try 10-30 initially. Too high will make noisy signal
 //          Channel =      1   2   3   4   5   6   7   8
-byte IRledBrightness[] = {20, 20, 20, 20, 20, 20, 20, 20};
+byte IRledBrightness[] = {60, 60, 60, 60, 60, 60, 60, 60};
 
 byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32, but only use 1. The others are too slow
 
 
-int pulseWidth = 411; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
+int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
 // For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
-int sampleRate = 200; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
-int adcRange = 8192; //Options: 2048, 4096, 8192, 16384. 4096 is standard
+int sampleRate = 400; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
+int adcRange = 4096; //Options: 2048, 4096, 8192, 16384. 4096 is standard
 
 
 #define TCAADDR 0x70 // I2C address for the I2C multiplexer chip
@@ -296,7 +296,7 @@ void setup() {
     oled.print("Waiting...");
     myTime = Teensy3Clock.get(); // update myTime
 
-    if ( (minute(myTime) % INTERVAL_MINUTES) == 0){
+    if ( (minute(myTime) % INTERVAL_MINUTES) == 0 & (second(myTime) == 0) ){
       break; // break out of while loop
     }
   }
