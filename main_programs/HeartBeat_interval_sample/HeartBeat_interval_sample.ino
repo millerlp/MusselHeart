@@ -36,8 +36,8 @@
 
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
 #define FAST_SAMPLE_INTERVAL_MS 100 // units millisecond - this sets sampling rate when active
-#define INTERVAL_MINUTES 1 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
-#define SAMPLING_LENGTH_SEC 55 // units seconds - how many seconds worth of samples will be collected in a minute
+#define INTERVAL_MINUTES 5 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
+#define SAMPLING_LENGTH_SEC 60 // units seconds - how many seconds worth of samples will be collected in a minute
 bool readTempsFlag = false;
 
 
@@ -61,7 +61,7 @@ byte REDledBrightness = 0; // low value of 0 shuts it off, 1 is barely on
 //          Channel =      1   2   3   4   5   6   7   8
 byte IRledBrightness[] = {60, 60, 60, 60, 60, 60, 60, 60};
 
-byte sampleAverage = 2; //Options: 1, 2, 4, 8, 16, 32, but only use 1. The others are too slow
+byte sampleAverage = 2; //Options: 1, 2, 4, 8, 16, 32, but only use 1 or 2. The others are too slow
 int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
 // For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
 int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
@@ -301,10 +301,10 @@ void setup() {
   // started
   oled.clear();
   // Manual shut down of SSD1306 oled display driver
-//  Wire1.beginTransmission(0x3C); // oled1 display address
-//  Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
-//  Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
-//  Wire1.endTransmission(); // stop transmitting
+  Wire1.beginTransmission(0x3C); // oled1 display address
+  Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
+  Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
+  Wire1.endTransmission(); // stop transmitting
 
 } // end of setup()
 
@@ -400,7 +400,7 @@ void loop() {
           }
           
            
-          printSensorOLED(channel, sampleBuffer[loopCount][channel]); // testing only
+//          printSensorOLED(channel, sampleBuffer[loopCount][channel]); // testing only
       }
     } // End of looping through the 8 channels
 
