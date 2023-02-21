@@ -61,7 +61,7 @@ byte REDledBrightness = 0; // low value of 0 shuts it off, 1 is barely on
 //          Channel =      1   2   3   4   5   6   7   8
 byte IRledBrightness[] = {60, 60, 60, 60, 60, 60, 60, 60};
 
-byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32, but only use 1. The others are too slow
+byte sampleAverage = 2; //Options: 1, 2, 4, 8, 16, 32, but only use 1. The others are too slow
 int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
 // For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
 int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
@@ -377,11 +377,30 @@ void loop() {
       
     for (byte channel = 0; channel < MAX_SENSORS; channel++) {
       if (goodSensors[channel] != 127) {
-          tcaselect(channel);
-          while(max3010x.check() < 0) {}; // wait for a new sample to appear    
-          // Calling getIR() should get the most recent value from the buffer of values
-          sampleBuffer[loopCount][channel] = max3010x.getIR();  // modify getIR in the library to remove safeCheck() function    
-//          printSensorOLED(channel, sampleBuffer[loopCount][channel]); // testing only
+          tcaselect(channel); // Change I2C channel to the next sensor
+          max3010x.clearFIFO(); // Clearing FIFO potentially lets you only have to grab one value from the FIFO once it starts to refill
+          long watchdog = millis();
+          bool sampleFlag = false;
+          while( millis() - watchdog < 5) {
+              byte readPointer = max3010x.getReadPointer();
+              byte writePointer = max3010x.getWritePointer();
+              if (readPointer != writePointer){
+                sampleFlag = true;
+                break; // escape the while loop once a new sample has appeared
+              }
+              delayMicroseconds(20);
+              sampleFlag = false;
+          }
+          if (sampleFlag){
+            max3010x.check();  // retrieve the new sample(s) and put them in the max3010x private buffer
+            // Calling getIR() should get the most recent value from the buffer of values
+            sampleBuffer[loopCount][channel] = max3010x.getIR();  // modify getIR in the library to remove safeCheck() function        
+          } else {
+            sampleBuffer[loopCount][channel] = 0;  // modify getIR in the library to remove safeCheck() function   
+          }
+          
+           
+          printSensorOLED(channel, sampleBuffer[loopCount][channel]); // testing only
       }
     } // End of looping through the 8 channels
 
