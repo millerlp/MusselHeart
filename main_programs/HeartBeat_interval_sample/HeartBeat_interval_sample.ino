@@ -34,6 +34,8 @@
 #include "SdFat.h"            // https://github.com/greiman/SdFat (compiles with SdFat 2.1.2)
 #include "EEPROM.h"
 
+#define OLED_OFF // Comment out to turn OLED off for power savings
+
 #define MAX_SENSORS 8  // Leave this set at 8, even if fewer than 8 sensors are attached
 #define FAST_SAMPLE_INTERVAL_MS 100 // units millisecond - this sets sampling rate when active
 #define INTERVAL_MINUTES 5 // Interval between sampling bouts, in minutes (i.e. 2, 5, etc)
@@ -300,11 +302,13 @@ void setup() {
   // If we exited the while loop above, a new minute has just
   // started
   oled.clear();
+#ifdef OLED_OFF  
   // Manual shut down of SSD1306 oled display driver
   Wire1.beginTransmission(0x3C); // oled1 display address
   Wire1.write(0x80); // oled set to Command mode (0x80) instead of data mode (0x40)
   Wire1.write(0xAE); // oled command to power down (0xAF should power back up)
   Wire1.endTransmission(); // stop transmitting
+#endif
 
 } // end of setup()
 
@@ -399,8 +403,9 @@ void loop() {
             sampleBuffer[loopCount][channel] = 0;  // modify getIR in the library to remove safeCheck() function   
           }
           
-           
-//          printSensorOLED(channel, sampleBuffer[loopCount][channel]); // testing only
+#ifndef OLED_OFF           
+          printSensorOLED(channel, sampleBuffer[loopCount][channel]); // testing only
+#endif
       }
     } // End of looping through the 8 channels
 
