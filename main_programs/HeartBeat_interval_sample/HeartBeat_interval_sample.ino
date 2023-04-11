@@ -15,6 +15,11 @@
     and put everything to sleep for the remainder of the sample interval
     using the Snooze library, in an attempt to lower the overall
     power usage.
+
+    This version works with the branched SparkFun MAX3010x library that
+    has the safeCheck() function removed from the getIR() function. However
+    that version of the library appears to break a lot of the other programs
+    in this package including the Sensor_function_check_MAX3010x.ino program
   
     NOTE: If this program is running on the Teensy, the serial
     connection will drop out every time a new set of samples starts,
