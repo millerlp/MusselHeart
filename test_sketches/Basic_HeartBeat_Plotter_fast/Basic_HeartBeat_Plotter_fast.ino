@@ -24,8 +24,8 @@
 #include "MAX30105.h"
 
 #define NUM_SENSORS 1
-#define QUICKSAMPLE 1 // Set 0 to use old sampling method, 1 to enable quick sample, set 2 to show millis() interval
-#define SLEEP  // Comment this out to disable sleep routine. Leave uncommented to use shutdown/wakeup
+#define QUICKSAMPLE 0 // Set 0 to use old sampling method, 1 to enable quick sample, set 2 to show millis() interval
+//#define SLEEP  // Comment this out to disable sleep routine. Leave uncommented to use shutdown/wakeup
 
 
 MAX30105 particleSensor;
