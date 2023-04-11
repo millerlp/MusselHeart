@@ -1,4 +1,4 @@
-/* 2021-03-04 L Miller
+/* 2021-03-04 L Miller 
  * Scan for functional MAX3010x heart rate sensors and print results to
  * OLED screen. Tested with Heart Rate Daughterboard revB and Teensy 3.5. 
  * Good for checking functioning of newly built heart sensors
