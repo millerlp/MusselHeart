@@ -13,13 +13,14 @@
 
 
 #define TCAADDR 0x70  // I2C address for the TCA9548 I2C multiplexer
-MAX30105 particleSensor; // create MAX30105 object called particleSensor
+//MAX30105 particleSensor; // create MAX30105 object called particleSensor
+MAX30105 max3010x; // create MAX3010x object
 
 // Particle sensor settings
 byte ledBrightness = 0x1F; //Options: 0=Off to 255=50mA (full on)
 byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32. We use immediate read, so no point to averaging
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. We use Red+IR for heart stuff
-byte sampleRate = 200; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
+byte sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 int pulseWidth = 215; //Options: 69, 118, 215, 411. Higher values = more sensitivity
 int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
 
@@ -59,10 +60,10 @@ void setup() {
       // Set the TCA I2C multiplexer to channel 0
     tcaselect(i);
     delayMicroseconds(20);
-//    if (particleSensor.begin(Wire, 400000)) // Fast I2C, only works with short sensor leads (<5m)
+//    if (max3010x.begin(Wire, 400000)) // Fast I2C, only works with short sensor leads (<5m)
     // Use default I2C port, I2C_SPEED_STANDARD (100kHz) to accomodate sensors
     // on the end of very long wire leads (tested up to 10 meters)
-    if (particleSensor.begin(Wire, I2C_SPEED_STANDARD)) 
+    if (max3010x.begin(Wire, I2C_SPEED_STANDARD)) 
     {
       // If sensor is present, mark it in the goodSensors array
       goodSensors[i] = i;
@@ -70,19 +71,19 @@ void setup() {
     } else {
       delay(5);
       // Try a second time to see if the sensor shows up
-      if(particleSensor.begin(Wire, I2C_SPEED_STANDARD)){        
+      if(max3010x.begin(Wire, I2C_SPEED_STANDARD)){        
         goodSensors[i] = i;
         numgoodSensors++;
       }
     }
 
     //Configure sensor with these initial settings
-    particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange); 
-    particleSensor.disableDIETEMPRDY(); //disable temp ready interrupt.
+    max3010x.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange); 
+    max3010x.disableDIETEMPRDY(); //disable temp ready interrupt.
     // Tweak individual settings
-    particleSensor.setPulseAmplitudeRed(0x01); // essentially turn off red LED to save power, we only want IR LED.
-    particleSensor.setPulseAmplitudeIR(ledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
-    particleSensor.setPulseWidth(pulseWidth); //Options: 69, 118, 215, 411. Higher values = more sensitivity
+    max3010x.setPulseAmplitudeRed(0x01); // essentially turn off red LED to save power, we only want IR LED.
+    max3010x.setPulseAmplitudeIR(ledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
+    max3010x.setPulseWidth(pulseWidth); //Options: 69, 118, 215, 411. Higher values = more sensitivity
     
   }
 
@@ -125,7 +126,9 @@ void loop() {
     for (byte i = 0; i < 8; i++){
       if (goodSensors[i] != 127) {
         tcaselect(i);
-  //      uint32_t sensorVal = particleSensor.getIR();
+  //      uint32_t sensorVal = max3010x.getIR();
+        max3010x.clearFIFO();
+        while(max3010x.check() < 1){} // Idle here until a value is ready
         uint32_t sensorVal = quickSampleIR();
         Serial.print(sensorVal); //Send raw data to plotter
         Serial.print("\t");
@@ -205,12 +208,106 @@ void printSensorOLED(uint8_t i, uint32_t sensorValue){
 
 //-----------------------------------------------
 // Custom sampling function for the MAX30105, calling functions in the MAX30105.h library
+//uint32_t quickSampleIR(void) {
+//  // Clear the MAX30105 FIFO buffer so that there will only be one new sample to read
+//  max3010x.clearFIFO(); 
+//  // Multiply pulseWidth by 2 because we always have to wait for the Red LED to sample first
+//  // before the IR LED gets sampled. Then account for time taken for any sample averages, and
+//  // add on a buffer of 50 more microseconds just for safety's sake
+//  delayMicroseconds( (pulseWidth * 2 * sampleAverage) + 50) ;
+//  return(max3010x.getIR());
+//} // end of quickSampleIR function
+
+
+
+// Custom sampling function for the MAX30105, calling functions in the MAX30105.h library
 uint32_t quickSampleIR(void) {
+  //  digitalWriteFast(IRDELAYPIN, HIGH);  // troubleshooting, can comment out
   // Clear the MAX30105 FIFO buffer so that there will only be one new sample to read
-  particleSensor.clearFIFO(); 
-  // Multiply pulseWidth by 2 because we always have to wait for the Red LED to sample first
-  // before the IR LED gets sampled. Then account for time taken for any sample averages, and
-  // add on a buffer of 50 more microseconds just for safety's sake
-  delayMicroseconds( (pulseWidth * 2 * sampleAverage) + 50) ;
-  return(particleSensor.getIR());
+//  max3010x.clearFIFO();
+  uint16_t ledSampleTime; // units will be microseconds
+
+  if (sampleAverage > 1) {
+
+    // Implement a delay for new samples to be collected in the FIFO. If sample averaging
+    // is used, a loop will need to execute multiple times to allow the multiple samples
+    // to be collected
+    for (int avg = 0; avg < sampleAverage; avg++) {
+      // Now add in the delay for the actual LED flashes to happen
+      switch (pulseWidth) {
+        // options for pulseWidth: 69, 118, 215, 411 microseconds
+        case 69:
+          ledSampleTime = pulseWidth + 358 + pulseWidth;
+          delayMicroseconds(ledSampleTime);
+          break;
+        case 118:
+          ledSampleTime = pulseWidth + 407 + pulseWidth;
+          delayMicroseconds(ledSampleTime);
+          break;
+        case 215:
+          ledSampleTime = pulseWidth + 505 + pulseWidth;
+          delayMicroseconds(ledSampleTime);
+          break;
+        case 411:
+          ledSampleTime = pulseWidth + 696 + pulseWidth;
+          delayMicroseconds(ledSampleTime);
+          break;
+        default:
+          ledSampleTime = pulseWidth + 505 + pulseWidth; // use 215 pulsewidth as default
+          delayMicroseconds(ledSampleTime);
+          break;
+      }
+      // If more than one sample is being averaged, you need to
+      // further wait for the start of the next sampling cycle,
+      // which is determined by the sampleRate and how long it just
+      // took for the red and IR leds to be sampled. This won't
+      // execute on the last sample of the average because it isn't
+      // needed after the IR LED is read for the last time
+        if (avg < (sampleAverage - 1)) {
+          switch (sampleRate) {
+            case 50:
+              delayMicroseconds(20000 - ledSampleTime);
+              break;
+            case 100:
+              delayMicroseconds(10000 - ledSampleTime);
+              break;
+            case 200:
+              delayMicroseconds(5000 - ledSampleTime);
+              break;
+            case 400:
+              delayMicroseconds(2500 - ledSampleTime);
+              break;
+            case 800:
+              delayMicroseconds(1250 - ledSampleTime);
+              break;
+            case 1000:
+              delayMicroseconds(1000 - ledSampleTime);
+              break;
+            case 1600:
+              delayMicroseconds(625 - ledSampleTime);
+              break;
+            case 3200:
+              delayMicroseconds(313 - ledSampleTime);
+              break;
+            default:
+              delayMicroseconds(5000 - ledSampleTime);
+              break;
+          } // end of switch statement
+      } // end of if statement
+    } // end up of delay loop
+  } else {
+    // If we're not averaging, just delay a bit for the red + IR pulses to happen
+    delayMicroseconds( (pulseWidth * 2 + 696) ) ;
+  }
+  delayMicroseconds(50); // Add in a little extra delay just to be safe
+  // Query the FIFO buffer on the sensor for the most recent IR value
+  //  digitalWriteFast(IRDELAYPIN, LOW); // troubleshooting, can comment out
+  //  digitalWriteFast(IRPIN, HIGH); // troubleshooting, can comment out
+//  uint32_t tempIR = max3010x.getFIFOIR();
+  // If sampleAverage is >1, the sensor should be internally averaging the
+  // readings, and this getIR() function will return the most recent averaged value
+  uint32_t tempIR = max3010x.getIR();
+  //  digitalWriteFast(IRPIN, LOW);  // troubleshooting, can comment out
+  return (tempIR);
+
 } // end of quickSampleIR function
