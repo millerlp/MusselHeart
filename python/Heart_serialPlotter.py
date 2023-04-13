@@ -79,9 +79,9 @@ class serialPlot:
  
  
 def main():
-    # portName = 'COM5'     # for windows users
+    portName = 'COM6'     # for windows users
     #portName = '/dev/tty.usbmodemFA131'  # Uno on the mac laptop
-    portName = '/dev/tty.usbmodem3952301' # Teensy3.5 on the mac laptop
+    # portName = '/dev/tty.usbmodem3952301' # Teensy3.5 on the mac laptop
     baudRate = 9600
     maxPlotLength = 1000
     dataNumBytes = 4        # number of bytes of 1 data point
