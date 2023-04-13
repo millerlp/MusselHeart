@@ -34,7 +34,7 @@ SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 por
 #define I2C_ADDRESS1 0x3C // for OLED. DIY mall units list 0x78 as address, but need 0x3C to work here
 
 unsigned long timer = 0;
-long loopTime = 20000;   // microseconds
+long loopTime = 10000;   // microseconds
 float val1 = 0.0; // Reminder: on Teensy float and double are different sizes
 float val2 = 0.0;
 float val3 = 0.0;
@@ -97,7 +97,7 @@ void setup() {
 //  Serial.println("Hello");
   digitalWrite(ledPin, LOW);
 
-  Serial.begin(9600); // speed doesn't matter for Teensy3.5
+  Serial.begin(115200); // speed doesn't matter for Teensy3.5
   oled.clear(); 
   oled.home();
   oled.set2X();
@@ -115,8 +115,8 @@ void setup() {
 }  // end of setup loop
 
 
- //--------------------------------------------------
- // Main loop
+//--------------------------------------------------
+// Main loop
 void loop() {
   uint32_t sampleBuffer[3] = {};
   timeSync(loopTime);
