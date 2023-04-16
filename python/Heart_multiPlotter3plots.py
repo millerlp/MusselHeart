@@ -3,7 +3,7 @@
 # Multiple plotting windows, one line each
 
 from threading import Thread
-import serial
+import serial ## Note this is installed as python -m pip install pyserial
 import time
 import collections
 import matplotlib.pyplot as plt
@@ -90,7 +90,8 @@ def makeFigure(xLimit, yLimit, title):
 
 def main():
     # portName = 'COM5'
-    portName = '/dev/ttyACM0'  # Teensy3.5 on the Ubuntu laptop
+    #portName = '/dev/ttyACM0'  # Teensy3.5 on the Ubuntu laptop
+    portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on new mac laptop Lurida
     baudRate = 115200
     maxPlotLength = 100     # number of points in x-axis of real time plot
     dataNumBytes = 4        # number of bytes of 1 data point

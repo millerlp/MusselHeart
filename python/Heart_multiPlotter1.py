@@ -85,7 +85,8 @@ class serialPlot:
 
 def main():
     # portName = 'COM5'
-    portName = '/dev/tty.usbmodem3952301' # Teensy3.5 on the mac laptop 
+    portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on the mac laptop 
+
     baudRate = 115200
     maxPlotLength = 100     # number of points in x-axis of real time plot
     dataNumBytes = 4        # number of bytes of 1 data point
