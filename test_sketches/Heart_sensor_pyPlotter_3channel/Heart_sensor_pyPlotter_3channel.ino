@@ -1,7 +1,7 @@
 /*
  * Testing a python plotter with Teensy 3.5
  * This will send data from 3 heart sensor channels
- * 
+ * This version still runs too slow to be useful.
  * 
  */
 
@@ -34,7 +34,7 @@ SSD1306AsciiWire oled(Wire1); // create OLED display object, using I2C Wire1 por
 #define I2C_ADDRESS1 0x3C // for OLED. DIY mall units list 0x78 as address, but need 0x3C to work here
 
 unsigned long timer = 0;
-long loopTime = 10000;   // microseconds
+long loopTime = 5000;   // microseconds
 float val1 = 0.0; // Reminder: on Teensy float and double are different sizes
 float val2 = 0.0;
 float val3 = 0.0;
@@ -118,14 +118,23 @@ void setup() {
 //--------------------------------------------------
 // Main loop
 void loop() {
+  
   uint32_t sampleBuffer[3] = {};
-  timeSync(loopTime);
-  for (byte i = 0 ; i<3 ; i++){
+  for (byte i  = 0 ; i< 3; i++){
     tcaselect(i);
     max3010x.clearFIFO();
+  }
+   timeSync(loopTime);
+  for (byte i = 0 ; i<3 ; i++){
+    tcaselect(i);
+//    max3010x.clearFIFO();
     while(max3010x.check() < 1){} // Idle here until a value is ready
+//    sampleBuffer[i] = max3010x.getIR();
+
 //    uint32_t sensorVal = quickSampleIR();
-    sampleBuffer[i] = quickSampleIR();
+//    uint32_t tempIR = max3010x.getIR();
+    sampleBuffer[i] = max3010x.getIR();
+//    sampleBuffer[i] = quickSampleIR();
   }
 
   val1 = float(sampleBuffer[0]);
