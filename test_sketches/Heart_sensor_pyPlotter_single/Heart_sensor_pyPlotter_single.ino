@@ -1,7 +1,7 @@
 /*
  * Testing a python plotter with Teensy 3.5
  * Works along with Heart_serialPlotter.py python script
- * 
+ * This runs fast enough, but only plots 1 channel of MAX3010x data
  * 
  */
 
