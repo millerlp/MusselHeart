@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Plots the output from a single MAX3010x heart sensor being sent from
+# a Teensy3.5 w/ daughterboard, running the Heart_sensor_pyPlotter.ino sketch
 # Run this in a recent Python3 environment
 # to get the time.perf_counter() working
 # Tested working with arduino Uno at 9600 baud on the Mac under Python 3
@@ -79,11 +81,12 @@ class serialPlot:
  
  
 def main():
-    portName = 'COM6'     # for windows users
+    # portName = 'COM6'     # for windows users
     #portName = '/dev/tty.usbmodemFA131'  # Uno on the mac laptop
     # portName = '/dev/tty.usbmodem3952301' # Teensy3.5 on the mac laptop
+    portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on the mac laptop 
     baudRate = 9600
-    maxPlotLength = 1000
+    maxPlotLength = 200
     dataNumBytes = 4        # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
     s.readSerialStart()                                               # starts background thread
@@ -93,7 +96,7 @@ def main():
     xmin = 0
     xmax = maxPlotLength
     ymin = 0
-    ymax = 512
+    ymax = 120000
     fig = plt.figure()
     ax = plt.axes(xlim=(xmin, xmax), ylim=(float(ymin - (ymax - ymin) / 10), float(ymax + (ymax - ymin) / 10)))
     ax.set_title('Arduino Analog Read')
