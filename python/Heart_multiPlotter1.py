@@ -99,7 +99,7 @@ def main():
     xmin = 0
     xmax = maxPlotLength
     ymin = 0
-    ymax = 512
+    ymax = 120000
     fig = plt.figure(figsize=(10, 8))
     ax = plt.axes(xlim=(xmin, xmax), ylim=(float(ymin - (ymax - ymin) / 10), float(ymax + (ymax - ymin) / 10)))
     ax.set_title('')
