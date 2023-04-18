@@ -100,7 +100,7 @@ void setup() {
 //  Serial.println("Hello");
   digitalWrite(ledPin, LOW);
 
-  Serial.begin(9600); // speed doesn't matter for Teensy3.5
+  Serial.begin(115200); // speed doesn't matter for Teensy3.5
   oled.clear(); 
   oled.home();
   oled.set2X();
@@ -110,6 +110,7 @@ void setup() {
   while (!Serial) {
     // Wait for serial connection to establish - This will stall here if no Serial window is opened
   }
+  oled.clear();
 
   
   timer = micros();
