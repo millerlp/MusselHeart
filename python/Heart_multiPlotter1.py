@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # From https://www.thepoorengineer.com/en/arduino-python-plot/
 # Single plotting window, multiple lines
+# This versions works fast enough for plotting 3 lines with the
+# Teensy 3.5 running Arduino program Heart_sensor_pyPlotter_3channel.ino
 
 
 from threading import Thread
@@ -85,7 +87,8 @@ class serialPlot:
 
 def main():
     # portName = 'COM5'
-    portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on the mac laptop 
+    # portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on the mac laptop 
+    portName = '/dev/tty.usbmodem39523001' # Teensy3.5 on the Lurida Mac laptop
 
     baudRate = 115200
     maxPlotLength = 100     # number of points in x-axis of real time plot
