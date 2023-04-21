@@ -110,7 +110,7 @@ def main():
     ax.set_ylabel("Sensor output")
 
     lineLabel = ['Channel 1', 'Channel 2', 'Channel 3']
-    style = ['r-', 'c-', 'b-']  # linestyles for the different plots
+    style = ['g-', 'b-', 'y-']  # linestyles for the different plots
     timeText = ax.text(0.70, 0.95, '', transform=ax.transAxes)
     lines = []
     lineValueText = []
