@@ -81,11 +81,12 @@ class serialPlot:
  
  
 def main():
+    # On a mac, try ls /dev/tty.usb* to find attached FTDI adapters
     # portName = 'COM6'     # for windows users
     #portName = '/dev/tty.usbmodemFA131'  # Uno on the mac laptop
-    # portName = '/dev/tty.usbmodem3952301' # Teensy3.5 on the mac laptop
-    portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on the mac laptop 
-    baudRate = 9600
+    portName = '/dev/tty.usbmodem39523001' # Teensy3.5 on the Lurida Mac laptop
+    # portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on the mac laptop 
+    baudRate = 115200
     maxPlotLength = 200
     dataNumBytes = 4        # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
@@ -99,9 +100,9 @@ def main():
     ymax = 120000
     fig = plt.figure()
     ax = plt.axes(xlim=(xmin, xmax), ylim=(float(ymin - (ymax - ymin) / 10), float(ymax + (ymax - ymin) / 10)))
-    ax.set_title('Arduino Analog Read')
+    ax.set_title('Pulse sensor output')
     ax.set_xlabel("time")
-    ax.set_ylabel("AnalogRead Value")
+    ax.set_ylabel("Raw Value")
  
     lineLabel = 'Serial Value'
     timeText = ax.text(0.50, 0.95, '', transform=ax.transAxes)

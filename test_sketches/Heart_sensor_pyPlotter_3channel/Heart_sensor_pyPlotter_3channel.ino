@@ -2,6 +2,7 @@
  * Testing a python plotter with Teensy 3.5
  * This will send data from 3 heart sensor channels
  * This version still runs too slow to be useful.
+ * Works fast enough for 3 channels
  * 
  */
 
