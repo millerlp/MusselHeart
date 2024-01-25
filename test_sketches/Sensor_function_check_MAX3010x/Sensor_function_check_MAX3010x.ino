@@ -1,7 +1,11 @@
 /* 2021-03-04 L Miller 
  * Scan for functional MAX3010x heart rate sensors and print results to
- * OLED screen. Tested with Heart Rate Daughterboard revB and Teensy 3.5. 
+ * OLED screen and to the Serial Plotter. 
+ * Tested with Heart Rate Daughterboard revB and Teensy 3.5. 
  * Good for checking functioning of newly built heart sensors
+ * This requires the modified version of the SparkFun_MAX3010x_Sensor_Library where
+ * the safeCheck() function is removed from the getIR() function. See the github
+ * link below for the correct library version
  * 
 */
 
