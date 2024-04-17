@@ -10,7 +10,11 @@
 # 4-byte values currently, and if you send 8-byte values from the
 # Arduino software it will just print
 # the upper 4 bytes of the 8-byte value, which will probably be empty.
-# 
+# On a Mac terminal, try running ls /dev/tty.usb* to find the connected usb FTDI adapter names
+# and then enter the appropriate one in the portName variable down below in def main():
+#
+# To run this program in a Mac terminal, navigate to the directory where this file sits, and
+# the at the terminal run: python3 Heart_serialPlotter.py
  
 from threading import Thread
 import serial
@@ -84,9 +88,10 @@ def main():
     # On a mac, try ls /dev/tty.usb* to find attached FTDI adapters
     # portName = 'COM6'     # for windows users
     #portName = '/dev/tty.usbmodemFA131'  # Uno on the mac laptop
-    portName = '/dev/tty.usbmodem39523001' # Teensy3.5 on the Lurida Mac laptop
+#    portName = '/dev/tty.usbmodem39523001' # Teensy3.5 on the Lurida Mac laptop
+    portName = '/dev/tty.usbserial-A104JYLR' # SensorChecker on Lurida Mac laptop
     # portName = '/dev/tty.usbmodem82462201' # Teensy3.5 on the mac laptop 
-    baudRate = 115200
+    baudRate = 57600
     maxPlotLength = 200
     dataNumBytes = 4        # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
@@ -96,7 +101,7 @@ def main():
     pltInterval = 50    # Period at which the plot animation updates [ms]
     xmin = 0
     xmax = maxPlotLength
-    ymin = 0
+    ymin = 100000  # Consider raising this to a larger non-zero value to help accentuate the signal
     ymax = 120000
     fig = plt.figure()
     ax = plt.axes(xlim=(xmin, xmax), ylim=(float(ymin - (ymax - ymin) / 10), float(ymax + (ymax - ymin) / 10)))
