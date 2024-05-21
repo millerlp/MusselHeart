@@ -2,6 +2,12 @@
  * Testing a python plotter with Teensy 3.5
  * Works along with Heart_serialPlotter.py python script
  * This runs fast enough, but only plots 1 channel of MAX3010x data
+ * Use it with the python script Heart_serialPlotter.py 
+ * You must first modify the Heart_serialPlotter.py script to point to the
+ * correct serial port that the device is attached to. On a mac you can look that
+ * up in the terminal using: ls /dev/tty.usb* 
+ * and finding the correct name. 
+ * Launch that script in a Mac terminal using> python3 Heart_serialPlotter.py
  * 
  */
 
