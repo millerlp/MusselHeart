@@ -52,6 +52,7 @@ bool readTempsFlag = false;
 // Debugging stuff, used with logic analyzer
 bool scopePinState = LOW; // for debugging
 int scopePin0 = 30; // for debugging
+int extLEDpin = 8; // for hooking up an external LED to show the board is alive
 
 //--------------------------------------
 // MAX30105 sensor parameters
@@ -158,6 +159,10 @@ void setup() {
   pinMode(scopePin0, OUTPUT);
   digitalWriteFast(scopePin0, scopePinState);
   //**************************
+  // External LED pin
+  pinMode(extLEDpin, OUTPUT); // Hook up an external LED to this pin (usually pin 8)
+  digitalWrite(extLEDpin, LOW); // set voltage to 0 on extLEDpin
+  //***************************
   // Battery monitor pins
   analogReference(EXTERNAL);
   analogReadResolution(10); // set 10 bit resolution
@@ -336,6 +341,13 @@ void loop() {
   myTime = Teensy3Clock.get();
 //  digitalWriteFast(scopePin0, HIGH); // debugging, can comment out
 //  scopePinState = HIGH; // debugging, can comment out
+  for (int led = 0; led < 4; led++){
+    digitalWrite(extLEDpin,HIGH);
+    delay(20);
+    digitalWrite(extLEDpin,LOW);  
+    delay(50);
+  }
+  
 
   time_t currTime = myTime; // Copy for later
   // If a new day has started, create a new output file
@@ -530,11 +542,14 @@ void loop() {
     // and the temperature readings, and will be going to sleep next
     for (int i = 0; i < 4; i++) {
       setColor(0, 255, 0);
+      digitalWrite(extLEDpin,HIGH);
       delay(5);
       setColor(0, 0, 0);
+      digitalWrite(extLEDpin,LOW);
       delay(5);
     }
   } // end of if (myTime == SAMPLING_LENGTH_SEC & readTempsFlag == true) section
+
 
   //*****************************************************
   // After the temperature samples have been taken, spend the
