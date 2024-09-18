@@ -212,8 +212,12 @@ void setup() {
   // program 'serial_number_generator.ino' available in
   // one of the subfolders of the MusselHeart software
   EEPROM.get(0, serialNumber);
+  char output[sizeof(serialNumber)];
+  EEPROM.get(0, output);
   if (serialNumber[0] == 'S') {
     serialValid = true; // set flag
+    Serial.print("Serial number: ");
+    Serial.println(output);
   }
   //*******************************
   // MAX30105 Sensor setup. This function will scan for avaialble
