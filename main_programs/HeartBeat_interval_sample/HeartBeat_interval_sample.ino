@@ -1,8 +1,13 @@
 /* HeartBeat_interval_sample.ino
-    Use this as the basis for field deployment programs (2024-09)
+    
     A version of the main datalogging program to work with
     Teensy3.5 and heart rate daughterboard RevB.
 
+    Updated 2024-10-03 to flash an external LED connected to pin 8
+    at the start of each heart sampling interval (5 minutes usually)
+    
+    Use this as the basis for field deployment programs (2024-10 onward)
+    
     Updated 2023-02-18 to fix the missed-sample issue and lengthen
     sampling period to 60 seconds from 30 seconds.   
     This version still has an issue with values from one channel
